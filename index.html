@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Event Driven Programming Quiz</title>
+<style>
+  :root{--bg:#0f172a;--card:#111827;--accent:#38bdf8;--muted:#94a3b8;--ok:#22c55e;--bad:#ef4444;}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial,"Noto Sans";background:var(--bg);color:#e5e7eb}
+  header{padding:28px 16px;text-align:center;border-bottom:1px solid #1f2937;background:linear-gradient(180deg,rgba(56,189,248,.08),transparent)}
+  h1{margin:0 0 8px 0;font-size:clamp(22px,4vw,36px);letter-spacing:.2px}
+  p.sub{margin:0;color:var(--muted);font-size:clamp(14px,2.3vw,16px)}
+  main{max-width:900px;margin:24px auto;padding:16px}
+  .card{background:var(--card);border:1px solid #1f2937;border-radius:16px;padding:18px;margin:16px 0;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+  .question{font-size:18px;margin:6px 0 14px 0;line-height:1.4}
+  .choices{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .choice{padding:12px 14px;border-radius:12px;border:1px solid #243041;background:#0b1220;color:#e5e7eb;text-align:left;cursor:pointer;transition:transform .05s ease, border-color .2s ease}
+  .choice:hover{transform:translateY(-1px);border-color:var(--accent)}
+  .controls{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+  button{background:var(--accent);border:none;color:#05232e;padding:10px 14px;border-radius:10px;font-weight:600;cursor:pointer}
+  #hud{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:12px 0}
+  .pill{border:1px solid #1f2937;background:#0b1220;border-radius:999px;padding:6px 12px;font-size:13px;color:#cbd5e1}
+  #result{font-size:18px;margin-top:6px;text-align:center}
+  footer{color:var(--muted);text-align:center;padding:24px 12px}
+  @media (max-width:720px){.choices{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Event Driven Programming — Quiz</h1>
+  <p class="sub">Inline Events • addEventListener • Callbacks • Promises • Async/Await • DOM & Timers • Fetch API</p>
+</header>
+<main>
+  <div id="hud">
+    <span class="pill" id="testName">Loading Test...</span>
+    <span class="pill" id="progress">Question 0/0</span>
+    <span class="pill" id="timer">Time: 10:00</span>
+  </div>
+  <div id="quiz"></div>
+  <div class="card">
+    <div class="question" id="result">Answer all questions to see your score.</div>
+    <div class="controls" id="answerSummary"></div>
+  </div>
+</main>
+<footer>Made for classroom use. Tip: Use it offline by saving this file.</footer>
+
+<script>
+let tests = [];
+let testIndex = 0;
+let currentTest = null;
+let questions = [];
+let userAnswers = [];
+let testResults = []; // Store answers & score per test
+let score = 0;
+let current = 0;
+let timer;
+let remaining = 10*60;
+
+const quizDiv = document.getElementById("quiz");
+const progressEl = document.getElementById("progress");
+const timerEl = document.getElementById("timer");
+const testNameEl = document.getElementById("testName");
+const resultEl = document.getElementById("result");
+const answerSummary = document.getElementById("answerSummary");
+
+function formatTime(s){
+  const m=Math.floor(s/60).toString().padStart(2,"0");
+  const sec=(s%60).toString().padStart(2,"0");
+  return m+":"+sec;
+}
+
+function startTimer(){
+  timer = setInterval(()=>{
+    remaining--;
+    timerEl.textContent="Time: "+formatTime(remaining);
+    if(remaining<=0){
+      clearInterval(timer);
+      nextTest();
+    }
+  },1000);
+}
+
+function renderMCQQuestion(index){
+  quizDiv.innerHTML="";
+  const q = questions[index];
+  progressEl.textContent=`Question ${index+1}/${questions.length}`;
+  testNameEl.textContent=currentTest.testName;
+  
+  const card=document.createElement("div");
+  card.className="card";
+  card.innerHTML=`<div class="question">${q.question}</div><div class="choices"></div>`;
+  const choicesDiv = card.querySelector(".choices");
+  
+  q.choices.forEach((c,i)=>{
+    const btn=document.createElement("button");
+    btn.className="choice";
+    btn.textContent=c;
+    btn.addEventListener("click",()=>{
+      userAnswers[index]=String.fromCharCode(65+i);
+      if(userAnswers[index]===q.answer) score++;
+      current++;
+      if(current<questions.length){
+        renderMCQQuestion(current);
+      } else nextTest();
+    });
+    choicesDiv.appendChild(btn);
+  });
+  quizDiv.appendChild(card);
+}
+
+function renderMatchingTest(){
+  quizDiv.innerHTML="";
+  testNameEl.textContent=currentTest.testName;
+  progressEl.textContent="Matching Test";
+
+  const card=document.createElement("div");
+  card.className="card";
+
+  let eventTypesHtml = "<p><strong>Event Types (Column B):</strong></p><ul>";
+  for(const key in currentTest.eventTypes){
+    eventTypesHtml += `<li>${key}: ${currentTest.eventTypes[key]}</li>`;
+  }
+  eventTypesHtml += "</ul>";
+
+  let html=`<div class="question">${currentTest.instructions}</div><ol>`;
+  currentTest.attributes.forEach((attr,i)=>{
+    html+=`<li>${attr.attribute}: <input maxlength="1" style="width:30px;text-transform:uppercase" data-index="${i}" data-answer="${attr.type}"></li>`;
+  });
+  html+="</ol><button id='submit-match'>Submit</button>";
+  
+  card.innerHTML = eventTypesHtml + html;
+  quizDiv.appendChild(card);
+
+  document.getElementById("submit-match").addEventListener("click",()=>{
+    userAnswers = [];
+    score = 0;
+    const inputs = card.querySelectorAll("input");
+    inputs.forEach(inp=>{
+      const ans = inp.value.toUpperCase() || "-";
+      userAnswers.push(ans);
+      if(ans===inp.dataset.answer) score++;
+    });
+    nextTest();
+  });
+}
+
+function nextTest(){
+  // Save current test results
+  testResults.push({
+    testName: currentTest.testName,
+    answers: [...userAnswers],
+    score: score,
+    total: currentTest.type==="mcq" ? questions.length : currentTest.attributes.length
+  });
+
+  testIndex++;
+  if(testIndex<tests.length){
+    loadTest(testIndex);
+  } else {
+    displayFinalResults();
+  }
+}
+
+function displayFinalResults(){
+  clearInterval(timer);
+  quizDiv.innerHTML="";
+  progressEl.textContent="All Tests Completed";
+  resultEl.textContent="";
+
+  let html="<h2>Quiz Summary</h2>";
+  let totalScore = 0;
+  testResults.forEach(test=>{
+    html+=`<h3>${test.testName}</h3><ul>`;
+    test.answers.forEach((ans,i)=>{
+      html+=`<li>Q${i+1}: ${ans}</li>`;
+    });
+    html+=`</ul><p>Score: ${test.score}/${test.total}</p>`;
+    totalScore += test.score;
+  });
+  html+=`<h3>Total Score: ${totalScore} points</h3>`;
+  quizDiv.innerHTML = html;
+}
+
+function loadTest(index){
+  currentTest = tests[index];
+  currentTest.type = currentTest.questions ? "mcq" : "match";
+  questions = currentTest.questions || [];
+  userAnswers = [];
+  score = 0;
+  current = 0;
+  remaining = 10*60;
+  resultEl.textContent="Answer all questions to see your score.";
+  answerSummary.innerHTML="";
+  clearInterval(timer);
+  startTimer();
+  if(currentTest.type==="mcq") renderMCQQuestion(0);
+  else renderMatchingTest();
+}
+
+// Load JSON
+fetch("quiz-data.json")
+  .then(res=>res.json())
+  .then(data=>{
+    tests = data.tests;
+    testIndex = 0;
+    testResults = [];
+    loadTest(0);
+  })
+  .catch(err=>{
+    console.error(err);
+    resultEl.textContent="Failed to load quiz data.";
+  });
+</script>
+
+</body>
+</html>
