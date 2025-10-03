@@ -184,6 +184,8 @@
       padding: 1rem;
       border-radius: 12px;
       border-left: 4px solid var(--accent);
+      white-space: pre-wrap; 
+      margin-bottom: 1.5rem; 
     }
     /* Form: Glassmorphic inputs, floating labels */
     .form-floating {
@@ -663,7 +665,7 @@
   let userInfo = { lastName: '', firstName: '', email: '', teacher: '', subject: '', schedule: '', code: '', startTime: '', endTime: '', date: '' };
 
   // Replace this with your actual Google Apps Script Web App URL
-  const ANSWER_API_URL = "https://script.google.com/macros/s/AKfycbyJmua1r3nmORdLaEXqzrFRqHRQmuLJ8h0xeDCJ4CSrQ1sdiID4XoensJBDlcJctEnL/exec";
+  const ANSWER_API_URL = "https://script.google.com/macros/s/AKfycbw9Cj8n2xSyCFdKI3zkBQiONPKfawnngoDsTgoOco6dS9NbhM-X3kiIqFlJxEovdgU9/exec";
 
   let tabWarnings = 0;
   let isExamActive = false;
@@ -724,11 +726,11 @@
     const card = document.createElement("div");
     card.className = "card card-custom mx-auto fade-in";
     card.innerHTML = `
-      <div class="card-body">
-        <div class="question-text">${q.question}</div>
-        <input type="text" class="form-control answer-input" id="ansInput" autocomplete="off" autofocus placeholder="Enter answer in CAPS">
-        <button class="btn btn-accent mt-3" id="submitBtn">Submit</button>
-      </div>
+      <div class="card-body p-4">
+         <div class="question-text">${q.question}</div> <!-- Now preserves whitespace/line breaks via CSS -->
+         <input type="text" class="form-control answer-input" id="ansInput" autocomplete="off" autofocus placeholder="Enter answer in CAPS (e.g., B for option b)" style="resize: vertical;"> 
+         <button class="btn btn-accent mt-3 w-100" id="submitBtn">Submit</button> 
+       </div>
     `;
     quizDiv.appendChild(card);
 
