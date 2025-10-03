@@ -1,216 +1,1024 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-bs-theme="dark">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Event Driven Programming Quiz</title>
-<style>
-  :root{--bg:#0f172a;--card:#111827;--accent:#38bdf8;--muted:#94a3b8;--ok:#22c55e;--bad:#ef4444;}
-  *{box-sizing:border-box}
-  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial,"Noto Sans";background:var(--bg);color:#e5e7eb}
-  header{padding:28px 16px;text-align:center;border-bottom:1px solid #1f2937;background:linear-gradient(180deg,rgba(56,189,248,.08),transparent)}
-  h1{margin:0 0 8px 0;font-size:clamp(22px,4vw,36px);letter-spacing:.2px}
-  p.sub{margin:0;color:var(--muted);font-size:clamp(14px,2.3vw,16px)}
-  main{max-width:900px;margin:24px auto;padding:16px}
-  .card{background:var(--card);border:1px solid #1f2937;border-radius:16px;padding:18px;margin:16px 0;box-shadow:0 10px 30px rgba(0,0,0,.25)}
-  .question{font-size:18px;margin:6px 0 14px 0;line-height:1.4}
-  .choices{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .choice{padding:12px 14px;border-radius:12px;border:1px solid #243041;background:#0b1220;color:#e5e7eb;text-align:left;cursor:pointer;transition:transform .05s ease, border-color .2s ease}
-  .choice:hover{transform:translateY(-1px);border-color:var(--accent)}
-  .controls{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
-  button{background:var(--accent);border:none;color:#05232e;padding:10px 14px;border-radius:10px;font-weight:600;cursor:pointer}
-  #hud{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:12px 0}
-  .pill{border:1px solid #1f2937;background:#0b1220;border-radius:999px;padding:6px 12px;font-size:13px;color:#cbd5e1}
-  #result{font-size:18px;margin-top:6px;text-align:center}
-  footer{color:var(--muted);text-align:center;padding:24px 12px}
-  @media (max-width:720px){.choices{grid-template-columns:1fr}}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Information Assurance and Security Exam</title>
+  <!-- Bootstrap 5.3 CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <!-- Google Fonts: Inter for sharp typography -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Custom CSS for Glassmorphism Theme -->
+  <style>
+    :root {
+      --bg-primary: #0a1a0a; /* Dark green */
+      --bg-secondary: #000000; /* Black */
+      --bg-accent: #4a0a0a; /* Maroon */
+      --glass-bg: rgba(255, 255, 255, 0.1); /* Semi-transparent for glass */
+      --glass-border: rgba(255, 255, 255, 0.2);
+      --glass-blur: blur(10px);
+      --accent: #10b981; /* Sharp emerald green */
+      --text-primary: #e5e7eb; /* Light gray */
+      --text-muted: #9ca3af;
+      --warn: #dc2626; /* Maroon red for warnings */
+      --ok: #10b981;
+      --bad: #dc2626;
+      --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      background: radial-gradient(ellipse at center, var(--bg-accent) 0%, var(--bg-primary) 50%, var(--bg-secondary) 100%);
+      background-attachment: fixed;
+      color: var(--text-primary);
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      font-weight: 400;
+      line-height: 1.5;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+    }
+    /* Header: Sharp, bold with subtle glass overlay */
+    .header-bg {
+      background: rgba(0, 0, 0, 0.3);
+      backdrop-filter: var(--glass-blur);
+      border-bottom: 1px solid var(--glass-border);
+      padding: 1rem 0;
+      text-align: center;
+      position: relative;
+      z-index: 10;
+    }
+    .header-bg h1 {
+      font-size: clamp(1.5rem, 4vw, 2.5rem);
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      margin: 0;
+      color: var(--text-primary);
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    }
+    .header-bg h2 {
+      font-size: clamp(1rem, 3vw, 1.25rem);
+      font-weight: 600;
+      margin: 0.5rem 0;
+      color: var(--bad);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+    .header-bg p {
+      font-size: clamp(0.875rem, 2vw, 1rem);
+      margin: 0;
+      color: var(--text-muted);
+      font-weight: 300;
+    }
+    /* Main Container: Centered, minimal padding */
+    main {
+      min-height: calc(100vh - 120px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+      position: relative;
+    }
+    .container {
+      max-width: 800px;
+      padding: 0;
+    }
+    /* HUD Pills: Glassmorphic, sharp rounded */
+    .hud-pills {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin: 1rem 0;
+      z-index: 5;
+    }
+    .pill-custom {
+      background: var(--glass-bg);
+      backdrop-filter: var(--glass-blur);
+      border: 1px solid var(--glass-border);
+      border-radius: 50px;
+      padding: 0.5rem 1rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text-primary);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: var(--shadow-glass);
+      letter-spacing: 0.025em;
+    }
+    .pill-custom:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+    }
+    .pill-custom.updated {
+      animation: pulse 0.6s ease-in-out;
+      border-color: var(--accent);
+      box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.05); opacity: 0.8; }
+    }
+    /* Quiz Area: Full-width for questions */
+    #quiz {
+      width: 100%;
+      min-height: 400px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    /* Glassmorphic Cards: Sharp, elevated */
+    .card-custom {
+      background: var(--glass-bg);
+      backdrop-filter: var(--glass-blur);
+      border: 1px solid var(--glass-border);
+      border-radius: 20px;
+      box-shadow: var(--shadow-glass);
+      overflow: hidden;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      max-width: 600px;
+      width: 100%;
+      margin: 1rem auto;
+    }
+    .card-custom:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+    .card-body {
+      padding: 2rem;
+      text-align: center;
+    }
+    .card-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 1.5rem;
+      letter-spacing: 0.025em;
+    }
+    /* Question Text: Sharp, readable */
+    .question-text {
+      font-size: 1.125rem;
+      line-height: 1.6;
+      text-align: left;
+      margin: 1rem 0 2rem 0;
+      color: var(--text-primary);
+      font-weight: 400;
+      background: rgba(0, 0, 0, 0.2);
+      padding: 1rem;
+      border-radius: 12px;
+      border-left: 4px solid var(--accent);
+    }
+    /* Form: Glassmorphic inputs, floating labels */
+    .form-floating {
+      margin-bottom: 1.5rem;
+    }
+    .form-control {
+      background: var(--glass-bg);
+      backdrop-filter: var(--glass-blur);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+      color: var(--text-primary);
+      padding: 1rem;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    .form-control:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 0.25rem rgba(16, 185, 129, 0.2), inset 0 2px 4px rgba(0, 0, 0, 0.1);
+      background: rgba(255, 255, 255, 0.15);
+      color: var(--text-primary);
+    }
+    .form-control::placeholder {
+      color: var(--text-muted);
+    }
+    .form-floating > label {
+      color: var(--text-muted);
+      font-weight: 500;
+      padding-left: 1rem;
+    }
+    .form-floating > .form-control:focus ~ label,
+    .form-floating > .form-control:not(:placeholder-shown) ~ label {
+      color: var(--accent);
+      transform: scale(0.85) translateY(-0.5rem) translateX(0.15rem);
+    }
+    /* Buttons: Sharp, glassmorphic with glow */
+    .btn-accent {
+      background: linear-gradient(135deg, var(--accent), #059669);
+      border: none;
+      border-radius: 12px;
+      color: #ffffff;
+      font-weight: 600;
+      padding: 0.75rem 2rem;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+      letter-spacing: 0.025em;
+      text-transform: uppercase;
+      font-size: 0.875rem;
+    }
+    .btn-accent:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+      background: linear-gradient(135deg, #059669, var(--accent));
+    }
+    .btn-accent:active {
+      transform: translateY(0);
+    }
+    .btn-secondary {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      color: var(--text-primary);
+      border-radius: 12px;
+      transition: all 0.3s ease;
+    }
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: var(--accent);
+      color: var(--text-primary);
+    }
+    /* Modals: Full glassmorphism */
+    .modal-content-custom {
+      background: var(--glass-bg);
+      backdrop-filter: var(--glass-blur);
+      border: 1px solid var(--glass-border);
+      border-radius: 20px;
+      box-shadow: var(--shadow-glass);
+      color: var(--text-primary);
+      transform: scale(0.95);
+      opacity: 0;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .modal.show .modal-content-custom {
+      transform: scale(1);
+      opacity: 1;
+    }
+    .modal-header-custom {
+      border-bottom: 1px solid var(--glass-border);
+      color: var(--text-primary);
+      padding: 1.5rem;
+      border-radius: 20px 20px 0 0;
+    }
+    .modal-body-custom {
+      color: var(--text-primary);
+      padding: 1.5rem;
+    }
+    .modal-footer {
+      border-top: 1px solid var(--glass-border);
+      padding: 1rem 1.5rem 1.5rem;
+      background: rgba(0, 0, 0, 0.1);
+      border-radius: 0 0 20px 20px;
+    }
+    .warn-text {
+      color: var(--bad);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    /* Loading Spinner: Glass-integrated */
+    .loading-spinner {
+      display: none;
+      text-align: center;
+      padding: 2rem;
+    }
+    .loading-spinner.show {
+      display: block;
+    }
+    .spinner-border-custom {
+      color: var(--accent);
+      width: 3rem;
+      height: 3rem;
+      border-width: 0.25em;
+    }
+    .loading-spinner p {
+      color: var(--text-muted);
+      font-weight: 400;
+      margin-top: 1rem;
+    }
+    /* Fade-in for Questions/Results: Sharp entry */
+    .fade-in {
+      opacity: 0;
+      transform: translateY(20px) scale(0.98);
+      transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .fade-in.show {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+    /* Answer Input: Enhanced glass */
+    .answer-input {
+      width: 100%;
+      padding: 1rem;
+      border-radius: 12px;
+      border: 1px solid var(--glass-border);
+      background: var(--glass-bg);
+      backdrop-filter: var(--glass-blur);
+      color: var(--text-primary);
+      margin-top: 1rem;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    .answer-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 0.25rem rgba(16, 185, 129, 0.2), inset 0 2px 4px rgba(0, 0, 0, 0.1);
+      background: rgba(255, 255, 255, 0.15);
+    }
+    .answer-input::placeholder {
+      color: var(--text-muted);
+    }
+    /* Footer: Subtle glass */
+    footer {
+      color: var(--text-muted);
+      text-align: center;
+      padding: 1.5rem;
+      background: rgba(0, 0, 0, 0.2);
+      border-top: 1px solid var(--glass-border);
+      font-size: 0.875rem;
+      font-weight: 300;
+      margin-top: auto;
+    }
+    /* Responsive Adjustments */
+    @media (max-width: 768px) {
+      main {
+        padding: 1rem;
+      }
+      .card-body {
+        padding: 1.5rem;
+      }
+      .hud-pills {
+        gap: 0.5rem;
+      }
+      .pill-custom {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.75rem;
+      }
+    }
+    /* Sharp Scrollbar (optional, for modern browsers) */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.2);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--accent);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #059669;
+    }
+  </style>
 </head>
 <body>
-<header>
-  <h1>Event Driven Programming — Quiz</h1>
-  <p class="sub">Inline Events • addEventListener • Callbacks • Promises • Async/Await • DOM & Timers • Fetch API</p>
-</header>
-<main>
-  <div id="hud">
-    <span class="pill" id="testName">Loading Test...</span>
-    <span class="pill" id="progress">Question 0/0</span>
-    <span class="pill" id="timer">Time: 10:00</span>
+  <!-- Header -->
+  <header class="header-bg">
+    <h1>Information Assurance and Security Exam</h1>
+    <h2>ALL ANSWERS MUST BE IN CAPSLOCK OR ELSE INCORRECT</h2>
+    <p>OS and Physical Environment Security</p>
+  </header>
+
+  <!-- Main Content -->
+  <main class="container py-4">
+    <!-- HUD -->
+    <div class="hud-pills">
+      <span class="pill-custom" id="progress">Question 0/0</span>
+      <span class="pill-custom" id="timer">Time: 00:30</span>
+    </div>
+
+    <!-- Quiz Area -->
+    <div id="quiz"></div>
+
+    <!-- Start Card with Form -->
+    <div class="card card-custom mx-auto" style="max-width: 600px;" id="startCard">
+      <div class="card-body text-center">
+        <h5 class="card-title" id="result">Enter your details to begin the exam.</h5>
+        <form id="userForm">
+          <div class="form-floating mb-3">
+            <input type="text" class="form-control" id="lastName" placeholder="Last Name" required autocomplete="off">
+            <label for="lastName">Last Name (Required)</label>
+          </div>
+          <div class="form-floating mb-3">
+            <input type="text" class="form-control" id="firstName" placeholder="First Name" required autocomplete="off">
+            <label for="firstName">First Name (Required)</label>
+          </div>
+          <div class="form-floating mb-3">
+            <input type="email" class="form-control" id="email" placeholder="Email" required>
+            <label for="email">Email (Required)</label>
+          </div>
+          <div class="form-floating mb-3">
+            <input type="text" class="form-control" id="teacher" placeholder="Teacher" required autocomplete="off">
+            <label for="teacher">Teacher (Required)</label>
+          </div>
+          <div class="form-floating mb-3">
+            <input type="text" class="form-control" id="subject" placeholder="Subject" required autocomplete="off">
+            <label for="subject">Subject (Required)</label>
+          </div>
+          <div class="form-floating mb-3">
+            <input type="text" class="form-control" id="schedule" placeholder="Schedule" required autocomplete="off">
+            <label for="schedule">Schedule (Required)</label>
+          </div>
+          <div class="form-floating mb-3">
+            <input type="text" class="form-control" id="code" placeholder="Test Code" required autocomplete="off">
+            <label for="code">Test Code (Required, e.g., TEST001)</label>
+          </div>
+        </form>
+        <button class="btn btn-accent btn-lg" id="startBtn">
+          <i class="bi bi-play-circle me-2"></i>START EXAM
+        </button>
+        <!-- Loading Spinner -->
+        <div class="loading-spinner" id="loadingSpinner">
+          <div class="spinner-border spinner-border-custom" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <p class="mt-2">Loading exam... Please wait.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="mt-auto">
+    Made for classroom use.
+  </footer>
+
+  <!-- Bootstrap JS CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Bootstrap Modals -->
+  <!-- Warning Modal (for violations) -->
+  <div class="modal fade" id="warningModal" tabindex="-1" aria-labelledby="warningModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content modal-content-custom">
+        <div class="modal-header modal-header-custom">
+          <h5 class="modal-title" id="warningModalLabel">
+            <i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>Warning
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body text-center modal-body-custom">
+          <div class="warn-text mb-3">⚠ Do not switch tabs or minimize the exam.</div>
+          <p id="warningText">This is your first warning. Continuing will restore fullscreen.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-accent" id="continueBtn">Continue Exam</button>
+          <button type="button" class="btn btn-secondary" id="exitBtn" data-bs-dismiss="modal">Exit Exam</button>
+        </div>
+      </div>
+    </div>
   </div>
-  <div id="quiz"></div>
-  <div class="card">
-    <div class="question" id="result">Answer all questions to see your score.</div>
-    <div class="controls" id="answerSummary"></div>
+
+  <!-- Confirm Modal (for answer submission) -->
+  <div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content modal-content-custom">
+        <div class="modal-header modal-header-custom">
+          <h5 class="modal-title" id="confirmModalLabel">Confirm Answer</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body text-center modal-body-custom">
+          <p id="confirmText">Are you sure you want to submit this answer?</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-accent" id="confirmYes">Yes</button>
+          <button type="button" class="btn btn-secondary" id="confirmNo" data-bs-dismiss="modal">No</button>
+        </div>
+      </div>
+    </div>
   </div>
-</main>
-<footer>Made for classroom use. Tip: Use it offline by saving this file.</footer>
+
+  <!-- Duplicate Modal -->
+  <div class="modal fade" id="duplicateModal" tabindex="-1" aria-labelledby="duplicateModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content modal-content-custom">
+        <div class="modal-header modal-header-custom">
+          <h5 class="modal-title" id="duplicateModalLabel">
+            <i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>Duplicate Entry
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body text-center modal-body-custom">
+          <div class="warn-text mb-3">⚠ Duplicate Name Detected</div>
+          <p id="duplicateText">A record with this name already exists. Please contact your instructor.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-accent" id="duplicateOk" data-bs-dismiss="modal">OK</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error Modal for Invalid Code/Sheet (New) -->
+  <div class="modal fade" id="errorModal" tabindex="-1" aria-labelledby="errorModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content modal-content-custom">
+        <div class="modal-header modal-header-custom">
+          <h5 class="modal-title" id="errorModalLabel">
+            <i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>Error
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body text-center modal-body-custom">
+          <div class="warn-text mb-3">⚠ Invalid Test Code</div>
+          <p id="errorText">The provided test code is invalid or no questions found. Please contact your instructor.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-accent" id="errorOk" data-bs-dismiss="modal">OK</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
 <script>
-let tests = [];
-let testIndex = 0;
-let currentTest = null;
-let questions = [];
-let userAnswers = [];
-let testResults = []; // Store answers & score per test
-let score = 0;
-let current = 0;
-let timer;
-let remaining = 10*60;
+  /* ------------------ Complete JavaScript Script (Batch Questions/Answers from Sheet + Dynamic Rendering) ------------------ */
 
-const quizDiv = document.getElementById("quiz");
-const progressEl = document.getElementById("progress");
-const timerEl = document.getElementById("timer");
-const testNameEl = document.getElementById("testName");
-const resultEl = document.getElementById("result");
-const answerSummary = document.getElementById("answerSummary");
+  // Bootstrap Modal Instances
+  const warningModal = new bootstrap.Modal(document.getElementById('warningModal'));
+  const confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
+  const duplicateModal = new bootstrap.Modal(document.getElementById('duplicateModal'));
+  const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
 
-function formatTime(s){
-  const m=Math.floor(s/60).toString().padStart(2,"0");
-  const sec=(s%60).toString().padStart(2,"0");
-  return m+":"+sec;
-}
+  let confirmOpen = false;
+  let confirmCallback = null;
 
-function startTimer(){
-  timer = setInterval(()=>{
-    remaining--;
-    timerEl.textContent="Time: "+formatTime(remaining);
-    if(remaining<=0){
-      clearInterval(timer);
-      nextTest();
+  /* ------------------ Exam Guardrails ------------------ */
+  // Block reload/inspect/common shortcuts
+  document.addEventListener("keydown", function(e) {
+    const k = e.key?.toLowerCase?.() || "";
+    if (e.key === "F5" || (e.ctrlKey && k === "r")) { e.preventDefault(); }
+    if (e.key === "F12" || (e.ctrlKey && e.shiftKey && (k === "i" || k === "j"))) { e.preventDefault(); }
+    if (e.ctrlKey && ["c", "v", "x", "a", "s", "u"].includes(k)) { e.preventDefault(); }
+  });
+  // Disable right click
+  document.addEventListener("contextmenu", e => e.preventDefault());
+
+  /* ------------------ Fullscreen Helpers ------------------ */
+  function requestFullscreen() {
+    const el = document.documentElement;
+    if (el.requestFullscreen) return el.requestFullscreen();
+    if (el.mozRequestFullScreen) return el.mozRequestFullScreen();
+    if (el.webkitRequestFullscreen) return el.webkitRequestFullscreen();
+    if (el.msRequestFullscreen) return el.msRequestFullscreen();
+  }
+
+  function inFullscreen() {
+    return !!(document.fullscreenElement || document.webkitFullscreenElement ||
+              document.mozFullScreenElement || document.msFullscreenElement);
+  }
+
+  /* ------------------ Exam State ------------------ */
+  let questions = []; // Array of {code, question, answer} objects (dynamic from sheet)
+  let answersMap = {}; // {code: answer} for instant lookups
+  let userAnswers = [];
+  let score = 0;
+  let current = 0;
+  let timer;
+  let remaining = 30; // 30 seconds per question
+  let examTimerSeconds = 30;
+  let userInfo = { lastName: '', firstName: '', email: '', teacher: '', subject: '', schedule: '', code: '', startTime: '', endTime: '', date: '' };
+
+  // Replace this with your actual Google Apps Script Web App URL
+  const ANSWER_API_URL = "https://script.google.com/macros/s/AKfycbyu3tK1niJitSiRxQfJGBF6J7ha2R5aON7NbAsN1zKnJjae7EyJ5ebhReM6WW4aE22J/exec";
+
+  let tabWarnings = 0;
+  let isExamActive = false;
+  let violationLock = false; // prevents duplicate triggers while modal open
+
+  const quizDiv = document.getElementById("quiz");
+  const progressEl = document.getElementById("progress");
+  const timerEl = document.getElementById("timer");
+  const resultEl = document.getElementById("result");
+  const startBtn = document.getElementById("startBtn");
+  const startCard = document.getElementById("startCard");
+  const loadingSpinner = document.getElementById("loadingSpinner");
+
+  /* ------------------ Timer Functions ------------------ */
+  function formatTime(s) {
+    const m = Math.floor(s / 60).toString().padStart(2, "0");
+    const sec = (s % 60).toString().padStart(2, "0");
+    return m + ":" + sec;
+  }
+
+    function startTimer() {
+     clearInterval(timer);
+     remaining = examTimerSeconds; // Dynamic from sheet
+     updateHud("timer", "Time: " + formatTime(remaining));
+     timer = setInterval(() => {
+       remaining--;
+       updateHud("timer", "Time: " + formatTime(remaining));
+       if (remaining <= 0) {
+         clearInterval(timer);
+         autoSubmitAnswer();
+       }
+     }, 1000);
+   }
+   
+  function autoSubmitAnswer() {
+    const ansInput = document.getElementById("ansInput");
+    const ans = ansInput ? ansInput.value.trim() || "-" : "-";
+    submitAnswer(ans);
+  }
+
+  /* ------------------ HUD Update with Animation ------------------ */
+  function updateHud(elementId, text) {
+    const el = document.getElementById(elementId);
+    if (el) {
+      el.textContent = text;
+      el.classList.add("updated");
+      setTimeout(() => el.classList.remove("updated"), 600);
     }
-  },1000);
-}
-
-function renderMCQQuestion(index){
-  quizDiv.innerHTML="";
-  const q = questions[index];
-  progressEl.textContent=`Question ${index+1}/${questions.length}`;
-  testNameEl.textContent=currentTest.testName;
-  
-  const card=document.createElement("div");
-  card.className="card";
-  card.innerHTML=`<div class="question">${q.question}</div><div class="choices"></div>`;
-  const choicesDiv = card.querySelector(".choices");
-  
-  q.choices.forEach((c,i)=>{
-    const btn=document.createElement("button");
-    btn.className="choice";
-    btn.textContent=c;
-    btn.addEventListener("click",()=>{
-      userAnswers[index]=String.fromCharCode(65+i);
-      if(userAnswers[index]===q.answer) score++;
-      current++;
-      if(current<questions.length){
-        renderMCQQuestion(current);
-      } else nextTest();
-    });
-    choicesDiv.appendChild(btn);
-  });
-  quizDiv.appendChild(card);
-}
-
-function renderMatchingTest(){
-  quizDiv.innerHTML="";
-  testNameEl.textContent=currentTest.testName;
-  progressEl.textContent="Matching Test";
-
-  const card=document.createElement("div");
-  card.className="card";
-
-  let eventTypesHtml = "<p><strong>Event Types (Column B):</strong></p><ul>";
-  for(const key in currentTest.eventTypes){
-    eventTypesHtml += `<li>${key}: ${currentTest.eventTypes[key]}</li>`;
   }
-  eventTypesHtml += "</ul>";
 
-  let html=`<div class="question">${currentTest.instructions}</div><ol>`;
-  currentTest.attributes.forEach((attr,i)=>{
-    html+=`<li>${attr.attribute}: <input maxlength="1" style="width:30px;text-transform:uppercase" data-index="${i}" data-answer="${attr.type}"></li>`;
-  });
-  html+="</ol><button id='submit-match'>Submit</button>";
-  
-  card.innerHTML = eventTypesHtml + html;
-  quizDiv.appendChild(card);
+  /* ------------------ Render Question with Fade-In Animation (Dynamic) ------------------ */
+  function renderQuestion(index) {
+    quizDiv.innerHTML = "";
+    const q = questions[index];
+    if (!q) return; // Safety check
+    updateHud("progress", `Question ${index + 1}/${questions.length}`);
 
-  document.getElementById("submit-match").addEventListener("click",()=>{
-    userAnswers = [];
-    score = 0;
-    const inputs = card.querySelectorAll("input");
-    inputs.forEach(inp=>{
-      const ans = inp.value.toUpperCase() || "-";
-      userAnswers.push(ans);
-      if(ans===inp.dataset.answer) score++;
+    const card = document.createElement("div");
+    card.className = "card card-custom mx-auto fade-in";
+    card.innerHTML = `
+      <div class="card-body">
+        <div class="question-text">${q.question}</div>
+        <input type="text" class="form-control answer-input" id="ansInput" autocomplete="off" autofocus placeholder="Enter answer in CAPS">
+        <button class="btn btn-accent mt-3" id="submitBtn">Submit</button>
+      </div>
+    `;
+    quizDiv.appendChild(card);
+
+    // Trigger fade-in animation
+    setTimeout(() => card.classList.add("show"), 10);
+
+    startTimer(); // start/reset timer for this question
+    if (current === 0) { // Only on first question
+       updateHud("timer", `Time: ${formatTime(examTimerSeconds)} per question`);
+     }
+   
+
+    const submit = () => {
+      const ans = document.getElementById("ansInput").value.trim() || "-";
+      showConfirmModal(ans, () => submitAnswer(ans));
+    };
+
+    document.getElementById("submitBtn").addEventListener("click", submit);
+    document.getElementById("ansInput").addEventListener("keydown", e => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        if (confirmOpen) return; // ignore Enter if confirm is open
+        submit();
+      }
     });
-    nextTest();
-  });
-}
-
-function nextTest(){
-  // Save current test results
-  testResults.push({
-    testName: currentTest.testName,
-    answers: [...userAnswers],
-    score: score,
-    total: currentTest.type==="mcq" ? questions.length : currentTest.attributes.length
-  });
-
-  testIndex++;
-  if(testIndex<tests.length){
-    loadTest(testIndex);
-  } else {
-    displayFinalResults();
   }
-}
 
-function displayFinalResults(){
-  clearInterval(timer);
-  quizDiv.innerHTML="";
-  progressEl.textContent="All Tests Completed";
-  resultEl.textContent="";
+  /* ------------------ Submit Answer (Instant from Batch Map) ------------------ */
+  function submitAnswer(userAnswer) {
+    clearInterval(timer); // stop timer on submit
 
-  let html="<h2>Quiz Summary</h2>";
-  let totalScore = 0;
-  testResults.forEach(test=>{
-    html+=`<h3>${test.testName}</h3><ul>`;
-    test.answers.forEach((ans,i)=>{
-      html+=`<li>Q${i+1}: ${ans}</li>`;
-    });
-    html+=`</ul><p>Score: ${test.score}/${test.total}</p>`;
-    totalScore += test.score;
+    const q = questions[current];
+    if (!q) return;
+
+    const correctAnswer = answersMap[q.code] || ""; // Instant lookup from batch
+
+    userAnswers[current] = userAnswer;
+
+    if (userAnswer.toLowerCase() === correctAnswer.toLowerCase()) {
+      score++;
+    }
+
+    current++;
+    if (current < questions.length) {
+      renderQuestion(current);
+    } else {
+      finishExam();
+    }
+  }
+
+  /* ------------------ Batch Fetch Questions and Answers from Sheet ------------------ */
+   async function fetchAllQuestionsAndAnswers() {
+     try {
+       const res = await fetch(`${ANSWER_API_URL}?action=getAllQuestionsAndAnswers&code=${encodeURIComponent(userInfo.code)}`);
+       if (!res.ok) throw new Error("Network response not ok");
+       const response = await res.json(); // { questionsMap, timerSeconds }
+       const questionsMap = response.questionsMap || {};
+       examTimerSeconds = response.timerSeconds || 30; // Use fetched timer, default 30
+       
+       if (Object.keys(questionsMap).length === 0) {
+         throw new Error("No questions found for this code");
+       }
+
+       // Convert map to shuffled array of full question objects
+       questions = shuffleArray(Object.values(questionsMap));
+       // Build answers map for lookups
+       answersMap = Object.fromEntries(questions.map(q => [q.code, q.answer]));
+       
+       console.log(`Batch loaded: ${questions.length} questions from sheet "${userInfo.code}" with ${examTimerSeconds}s timer`, questionsMap);
+       return true;
+     } catch (err) {
+       console.error("Batch fetch failed:", err);
+       return false;
+     }
+   }
+   
+
+  /* ------------------ Confirm Modal (Bootstrap) ------------------ */
+  function showConfirmModal(answer, onConfirm) {
+    document.getElementById("confirmText").textContent = `Are you sure you want to submit "${answer}" as your final answer?`;
+    confirmModal.show();
+    confirmOpen = true;
+    confirmCallback = onConfirm;
+
+    // Handle keys for modal (capture phase)
+    const handleKeys = (e) => {
+      if (e.key === "Enter") { e.preventDefault(); handleYes(); }
+      if (e.key === "Escape") { e.preventDefault(); handleNo(); }
+    };
+    document.addEventListener("keydown", handleKeys, true);
+
+    function handleYes() {
+      confirmModal.hide();
+      confirmOpen = false;
+      document.removeEventListener("keydown", handleKeys, true);
+      if (confirmCallback) confirmCallback();
+    }
+
+    function handleNo() {
+      confirmModal.hide();
+      confirmOpen = false;
+      document.removeEventListener("keydown", handleKeys, true);
+    }
+
+    // Event listeners for buttons (remove on hide to avoid duplicates)
+    const confirmYesBtn = document.getElementById("confirmYes");
+    const confirmNoBtn = document.getElementById("confirmNo");
+    confirmYesBtn.onclick = handleYes;
+    confirmNoBtn.onclick = handleNo;
+
+    // Clean up on modal hide
+    confirmModal._element.addEventListener('hidden.bs.modal', () => {
+      confirmOpen = false;
+      document.removeEventListener("keydown", handleKeys, true);
+      confirmYesBtn.onclick = null;
+      confirmNoBtn.onclick = null;
+    }, { once: true });
+  }
+
+  /* ------------------ Finish Exam & Record Grade (with Fade-In) ------------------ */
+  function finishExam() {
+    clearInterval(timer);
+    isExamActive = false;
+    quizDiv.innerHTML = "";
+    updateHud("progress", "Exam Completed");
+    resultEl.textContent = "Exam Finished";
+
+    const finalScore = `${score}/${questions.length}`;
+    const resultsCard = document.createElement("div");
+    resultsCard.className = "card card-custom mx-auto fade-in";
+    resultsCard.style.maxWidth = "600px";
+    resultsCard.innerHTML = `
+      <div class="card-body text-center">
+        <h2 class="card-title">Exam Results</h2>
+        <h3 class="text-primary">Final Score: ${finalScore}</h3>
+        <div id="countdownBox" class="mt-3 fs-6 text-muted">
+          After 300s, this will go back to the start page.
+        </div>
+      </div>
+    `;
+    quizDiv.appendChild(resultsCard);
+
+    // Trigger fade-in
+    setTimeout(() => resultsCard.classList.add("show"), 10);
+
+    // Record grade to Google Sheet (all fields)
+    userInfo.endTime = new Date().toISOString();
+    userInfo.date = new Date().toISOString().split('T')[0];
+    const recordUrl = `${ANSWER_API_URL}?action=recordGrade&lastName=${encodeURIComponent(userInfo.lastName)}&firstName=${encodeURIComponent(userInfo.firstName)}&email=${encodeURIComponent(userInfo.email)}&teacher=${encodeURIComponent(userInfo.teacher)}&subject=${encodeURIComponent(userInfo.subject)}&schedule=${encodeURIComponent(userInfo.schedule)}&score=${encodeURIComponent(finalScore)}&startTime=${encodeURIComponent(userInfo.startTime)}&endTime=${encodeURIComponent(userInfo.endTime)}&date=${encodeURIComponent(userInfo.date)}`;
+
+    fetch(recordUrl)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          console.log("Grade recorded successfully");
+        } else {
+          console.error("Failed to record grade:", data.error);
+        }
+      })
+      .catch(err => {
+        console.error("Failed to record grade:", err);
+      });
+
+    // 5-minute countdown to reset
+    let countdown = 300;
+    const cdEl = document.getElementById("countdownBox");
+    const interval = setInterval(() => {
+      countdown--;
+      cdEl.textContent = `After ${countdown}s, this will go back to the start page.`;
+      if (countdown <= 0) {
+        clearInterval(interval);
+        resetExam();
+      }
+    }, 1000);
+  }
+
+  /* ------------------ Reset Exam (with Fade-Out) ------------------ */
+  function resetExam() {
+    // Fade out quiz area
+    quizDiv.style.opacity = "0";
+    quizDiv.style.transition = "opacity 0.5s ease";
+    setTimeout(() => {
+      quizDiv.innerHTML = "";
+      quizDiv.style.opacity = "1";
+      resultEl.textContent = "Enter your details to begin the exam.";
+      startBtn.style.display = "block";
+      startCard.style.display = "block";
+      updateHud("progress", "Question 0/0");
+      updateHud("timer", "Time: 00:30");
+      score = 0;
+      current = 0;
+      userAnswers = [];
+      remaining = 30;
+      tabWarnings = 0;
+      violationLock = false;
+      isExamActive = false;
+      questions = [];
+      answersMap = {}; // Clear batch data
+      examTimerSeconds = 30; 
+      document.body.style.background = ""; // Reset if needed
+    }, 500);
+  }
+
+  /* ------------------ Violation Handling ------------------ */
+  function handleViolation() {
+    if (!isExamActive || violationLock) return;
+    violationLock = true;
+
+    tabWarnings++;
+
+    if (tabWarnings === 1) {
+      // First offense: show modal + auto resume after 8s
+      document.getElementById("warningText").textContent = "This is your first warning. Resuming exam in 8s...";
+      warningModal.show();
+
+      let autoResume = 8;
+      const interval = setInterval(() => {
+        autoResume--;
+        document.getElementById("warningText").textContent = `Resuming exam in ${autoResume}s...`;
+        if (autoResume <= 0) {
+          clearInterval(interval);
+          warningModal.hide();
+          requestFullscreen().catch(() => {});
+          setTimeout(() => { violationLock = false; }, 150);
+        }
+      }, 1000);
+    } else {
+      // Second offense: end exam
+      document.body.style.background = "red";
+      warningModal.hide();
+      finishExam();
+      violationLock = false;
+    }
+  }
+
+  // Visibility change (tab switch / minimize)
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) { handleViolation(); }
   });
-  html+=`<h3>Total Score: ${totalScore} points</h3>`;
-  quizDiv.innerHTML = html;
-}
 
-function loadTest(index){
-  currentTest = tests[index];
-  currentTest.type = currentTest.questions ? "mcq" : "match";
-  questions = currentTest.questions || [];
-  userAnswers = [];
-  score = 0;
-  current = 0;
-  remaining = 10*60;
-  resultEl.textContent="Answer all questions to see your score.";
-  answerSummary.innerHTML="";
-  clearInterval(timer);
-  startTimer();
-  if(currentTest.type==="mcq") renderMCQQuestion(0);
-  else renderMatchingTest();
-}
-
-// Load JSON
-fetch("quiz-data.json")
-  .then(res=>res.json())
-  .then(data=>{
-    tests = data.tests;
-    testIndex = 0;
-    testResults = [];
-    loadTest(0);
-  })
-  .catch(err=>{
-    console.error(err);
-    resultEl.textContent="Failed to load quiz data.";
+  // Exit fullscreen = violation
+  document.addEventListener("fullscreenchange", () => {
+    if (isExamActive && !inFullscreen()) { handleViolation(); }
   });
+  document.addEventListener("webkitfullscreenchange", () => {
+    if (isExamActive && !inFullscreen()) { handleViolation(); }
+  });
+  document.addEventListener("msfullscreenchange", () => {
+    if (isExamActive && !inFullscreen()) { handleViolation(); }
+  });
+
+   /* ------------------ Modal Event Listeners ------------------ */
+  // Warning Modal Buttons
+  document.getElementById("continueBtn").addEventListener("click", async () => {
+    warningModal.hide();
+    try { await requestFullscreen(); } catch (e) {}
+    setTimeout(() => { violationLock = false; }, 150);
+  });
+
+  document.getElementById("exitBtn").addEventListener("click", () => {
+    warningModal.hide();
+    finishExam();
+    violationLock = false;
+  });
+
+  // Duplicate Modal Button
+  document.getElementById("duplicateOk").addEventListener("click", () => {
+    duplicateModal.hide();
+  });
+
+  // Error Modal Button (for invalid code/no questions)
+  document.getElementById("errorOk").addEventListener("click", () => {
+    errorModal.hide();
+    resetExam(); // Reset to form on error
+  });
+
+  /* ------------------ Start Exam with Validation + Batch Load + Loading Animation ------------------ */
+  startBtn.addEventListener("click", async () => {
+    const lastName = document.getElementById("lastName").value.trim();
+    const firstName = document.getElementById("firstName").value.trim();
+    const email = document.getElementById("email").value.trim();
+    const teacher = document.getElementById("teacher").value.trim();
+    const subject = document.getElementById("subject").value.trim();
+    const schedule = document.getElementById("schedule").value.trim();
+    const code = document.getElementById("code").value.trim();
+
+    // Client-side validation (all fields required)
+    if (!lastName || !firstName || !email || !teacher || !subject || !schedule || !code) {
+      alert("Please fill in all fields.");
+      return;
+    }
+    if (!email.includes("@")) {
+      alert("Please enter a valid email.");
+      return;
+    }
+    if (code.length < 3) {
+      alert("Test Code must be at least 3 characters (e.g., TEST001).");
+      return;
+    }
+
+    // Store user info
+    userInfo.lastName = lastName;
+    userInfo.firstName = firstName;
+    userInfo.email = email;
+    userInfo.teacher = teacher;
+    userInfo.subject = subject;
+    userInfo.schedule = schedule;
+    userInfo.code = code.toUpperCase(); // Normalize CODE to uppercase
+    userInfo.startTime = new Date().toISOString();
+    userInfo.date = new Date().toISOString().split('T')[0];
+
+    // Check for duplicate via Apps Script (based on name only)
+    const checkUrl = `${ANSWER_API_URL}?action=checkDuplicate&lastName=${encodeURIComponent(lastName)}&firstName=${encodeURIComponent(firstName)}`;
+
+    try {
+      const res = await fetch(checkUrl);
+      const data = await res.json();
+
+      if (data.exists) {
+        document.getElementById("duplicateText").textContent = `A record for "${firstName} ${lastName}" already exists. Please contact your instructor.`;
+        duplicateModal.show();
+        return;
+      }
+
+      // No duplicate: Proceed to exam
+      try { await requestFullscreen(); } catch (e) {}
+      startCard.style.display = "none";
+      resultEl.textContent = "Exam in progress...";
+      isExamActive = true;
+
+      // Show loading spinner
+      loadingSpinner.classList.add("show");
+
+      // Batch load questions and answers from sheet (dynamic count)
+      const batchSuccess = await fetchAllQuestionsAndAnswers();
+
+      // Hide loading spinner
+      loadingSpinner.classList.remove("show");
+
+      if (batchSuccess && questions.length > 0) {
+        // Success: Shuffle (already done in fetch), reset state, render first question
+        current = 0;
+        score = 0;
+        userAnswers = [];
+        renderQuestion(0);
+      } else {
+        // Failure: Show error modal (invalid code, no sheet, empty data)
+        document.getElementById("errorText").textContent = `Invalid test code "${userInfo.code}" or no questions found. Please contact your instructor.`;
+        errorModal.show();
+        // Reset state on error
+        isExamActive = false;
+        startCard.style.display = "block";
+        resultEl.textContent = "Enter your details to begin the exam.";
+      }
+    } catch (err) {
+      console.error("Failed to check duplicate or load exam:", err);
+      loadingSpinner.classList.remove("show");
+      alert("Error loading exam. Please try again.");
+      isExamActive = false;
+      startCard.style.display = "block";
+      resultEl.textContent = "Enter your details to begin the exam.";
+    }
+  });
+
+  /* ------------------ Utility Functions ------------------ */
+  function shuffleArray(arr) {
+    // Fisher-Yates shuffle for randomization
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
 </script>
 
 </body>
