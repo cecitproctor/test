@@ -46,7 +46,7 @@
   let userInfo = { lastName: '', firstName: '', email: '', teacher: '', subject: '', schedule: '', code: '', startTime: '', endTime: '', date: '' };
 
   // Replace this with your actual Google Apps Script Web App URL
-  const ANSWER_API_URL = "https://script.google.com/macros/s/AKfycbxCUNN8lgKfpHlgagG0wHkHTUOtqEC-W4mW0yiyax7tKOoHvKxMsY2zHJGMhPH74ZaA/exec";
+  const ANSWER_API_URL = "https://script.google.com/macros/s/AKfycbw3aYG4HdCT0EkpqLZzppRKwrsMgJgXVnpjsOsIAL1zzGhQEDsZ5S9dGmvvLZggz8s2/exec";
 
   let tabWarnings = 0;
   let isExamActive = false;
@@ -108,7 +108,7 @@
     card.className = "card card-custom mx-auto fade-in";
     card.innerHTML = `
       <div class="card-body p-4">
-         <div class="question-text">${q.question}</div> <!-- Now preserves whitespace/line breaks via CSS -->
+         <div class="question-text">${q.question}</div> 
          <input type="text" class="form-control answer-input" id="ansInput" autocomplete="off" autofocus placeholder="Enter answer in CAPS (e.g., B for option b)" style="resize: vertical;"> 
          <button class="btn btn-accent mt-3 w-100" id="submitBtn">Submit</button> 
        </div>
