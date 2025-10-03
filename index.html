@@ -395,7 +395,7 @@
 </head>
 <body>
   <!-- Header -->
-  <header class="header-bg">
+  <header class="bg-dark text-center py-3 sticky-top" style="z-index: 1000; border-bottom: 1px solid var(--accent);">
     <h1>Information Online Exam Proctor</h1>
     <h2>ALL ANSWERS MUST BE IN CAPSLOCK OR ELSE INCORRECT</h2>
     <p>Please read the questions and answer carefully.</p>
@@ -646,7 +646,7 @@
   let userInfo = { lastName: '', firstName: '', email: '', teacher: '', subject: '', schedule: '', code: '', startTime: '', endTime: '', date: '' };
 
   // Replace this with your actual Google Apps Script Web App URL
-  const ANSWER_API_URL = "https://script.google.com/macros/s/AKfycbym68Ma2xmOwZnZ4qp1zTsXqvQFZZM2ekI-EkCTSatLzNSe65htwQIxzBSGiPlaTGAO/exec";
+  const ANSWER_API_URL = "https://script.google.com/macros/s/AKfycbyJmua1r3nmORdLaEXqzrFRqHRQmuLJ8h0xeDCJ4CSrQ1sdiID4XoensJBDlcJctEnL/exec";
 
   let tabWarnings = 0;
   let isExamActive = false;
