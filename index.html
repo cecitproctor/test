@@ -61,9 +61,22 @@
     </div>
 
     
-    <!-- Quiz Area -->
-    <div id="quiz"></div>
-    
+  <!-- Quiz Container (Hidden Initially) -->
+        <div id="quizContainer" class="d-none">
+            <div id="result" class="alert alert-info">Enter your details to begin the exam.</div>
+            <div id="progress" class="progress-bar"></div> <!-- Or your HUD -->
+            <div id="timer" class="timer-display"></div>
+            <div id="quiz" class="quiz-area"></div> <!-- Your quizDiv -->
+            <button id="submitBtn" class="btn btn-success d-none">Submit</button>
+        </div>
+        <!-- Loading Spinner (Bootstrap Circling Animation) -->
+        <div id="loadingSpinner" class="d-none text-center p-4">
+            <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+                <span class="visually-hidden">Loading quiz...</span>
+            </div>
+            <p class="mt-2">Loading questions for <span id="loadingCode"></span>... Please wait.</p>
+        </div>
+    </div>
   </main>
 
   <!-- Footer -->
@@ -137,27 +150,28 @@
     </div>
   </div>
 
-  <!-- Error Modal for Invalid Code/Sheet (New) -->
-  <div class="modal fade" id="errorModal" tabindex="-1" aria-labelledby="errorModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content modal-content-custom">
-        <div class="modal-header modal-header-custom">
-          <h5 class="modal-title" id="errorModalLabel">
-            <i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>Error
-          </h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+<!-- Enhanced Error Modal (Dynamic Messages for Connection/Sheet/Questions Issues) -->
+    <div class="modal fade" id="errorModal" tabindex="-1" aria-labelledby="errorModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="errorModalLabel">Error Starting Quiz</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="errorText" class="alert alert-danger">
+                        <!-- Dynamic content: e.g., "Connection failed: Check internet." or "No sheet found for TEST001." -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="errorOk" data-bs-dismiss="modal">OK</button>
+                </div>
+            </div>
         </div>
-        <div class="modal-body text-center modal-body-custom">
-          <div class="warn-text mb-3">⚠ Invalid Test Code</div>
-          <p id="errorText">The provided test code is invalid or no questions found. Please contact your instructor.</p>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-accent" id="errorOk" data-bs-dismiss="modal">OK</button>
-        </div>
-      </div>
     </div>
-    
-  </div>
-  <script src="script.js"></script>
+
+  
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
