@@ -169,24 +169,53 @@ function submitAnswer(userAnswer) {
 async function fetchAllQuestionsAndAnswers() {
   try {
     const res = await fetch(`${ANSWER_API_URL}?action=getAllQuestionsAndAnswers&code=${encodeURIComponent(userInfo.code)}`);
-    if (!res.ok) throw new Error("Network response not ok");
-    const response = await res.json(); // { questionsMap, defaultTimerSeconds }
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}: Failed to connect to backend. Check web app deployment.`);
+    }
+    const response = await res.json();
     const questionsMap = response.questionsMap || {};
-    examTimerSeconds = response.defaultTimerSeconds || 30; // Use fetched default timer, fallback 30
+    examTimerSeconds = response.defaultTimerSeconds || 30;
+    
+    // Check for backend error
+    if (response.error) {
+      throw new Error(`Backend Error: ${response.error}`);
+    }
     
     if (Object.keys(questionsMap).length === 0) {
-      throw new Error("No questions found for this code");
+      throw new Error("No questions found. Check sheet '" + userInfo.code + "' has data in columns A-D (Code, Question, Answer, Timer).");
     }
 
-    // Convert map to shuffled array of full question objects
     questions = shuffleArray(Object.values(questionsMap));
-    // Build answers map for lookups
     answersMap = Object.fromEntries(questions.map(q => [q.code, q.answer]));
     
-    console.log(`Batch loaded: ${questions.length} questions from sheet "${userInfo.code}" with ${examTimerSeconds}s timer`, questionsMap);
+    console.log(`Batch loaded: ${questions.length} questions from sheet "${userInfo.code}" with ${examTimerSeconds}s timer`);
     return true;
   } catch (err) {
     console.error("Batch fetch failed:", err);
+    
+    // Show detailed error modal
+    let errorMsg = err.message || "Unknown error loading questions.";
+    if (errorMsg.includes("HTTP")) {
+      errorMsg = "Connection failed: Verify the web app URL and redeploy Apps Script.";
+    } else if (errorMsg.includes("Sheet not found")) {
+      errorMsg = "Sheet not found: Ensure '" + userInfo.code + "' tab exists in the Google Sheet bound to Apps Script.";
+    } else if (errorMsg.includes("No questions")) {
+      errorMsg = "No questions loaded: Verify A-D columns in sheet '" + userInfo.code + "' (Row 1: Headers, Rows 2+: Questions until blank A).";
+    }
+    
+    document.getElementById("errorText").innerHTML = `
+      <strong>Quiz Loading Error:</strong><br>
+      ${errorMsg}<br><br>
+      <small>Console logs: ${err.message}. Contact teacher if persists.</small>
+    `;
+    errorModal.show();
+    
+    // Reset state
+    isExamActive = false;
+    startCard.style.display = "block";
+    resultEl.textContent = "Enter your details to begin the exam.";
+    loadingSpinner.classList.add("d-none");
+    
     return false;
   }
 }
@@ -392,17 +421,19 @@ document.getElementById("duplicateOk").addEventListener("click", () => {
   duplicateModal.hide();
 });
 
-// Error Modal Button (for invalid code/no questions)
+// Error Modal Button
 document.getElementById("errorOk").addEventListener("click", () => {
   errorModal.hide();
-  resetExam(); // Reset to form on error
+  // Optional: Reset form or log
+  console.log("Error modal closed – user can retry.");
 });
+
 
 /* ------------------ Start Exam with Validation + Batch Load + Loading Animation ------------------ */
 startBtn.addEventListener("click", async () => {
   const lastName = document.getElementById("lastName").value.trim();
   const firstName = document.getElementById("firstName").value.trim();
-  const code = document.getElementById("code").value.trim(); // Or "testCode" if ID changed in HTML
+  const code = document.getElementById("code").value.trim();
 
   // Client-side validation (only 3 fields required)
   if (!lastName || !firstName || !code) {
@@ -411,3 +442,69 @@ startBtn.addEventListener("click", async () => {
   }
   if (code.length < 3) {
     alert("Test Code must be at least 3 characters (e.g., TEST001).");
+    return;
+  }
+
+  // Store user info (simplified)
+  userInfo.lastName = lastName;
+  userInfo.firstName = firstName;
+  userInfo.code = code.toUpperCase();
+  userInfo.startTime = new Date().toISOString();
+  userInfo.date = new Date().toISOString().split('T')[0];
+
+  // Check for duplicate
+  const checkUrl = `${ANSWER_API_URL}?action=checkDuplicate&lastName=${encodeURIComponent(lastName)}&firstName=${encodeURIComponent(firstName)}&code=${encodeURIComponent(userInfo.code)}`;
+
+  try {
+    const res = await fetch(checkUrl);
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}: Connection issue – check web app deployment.`);
+    }
+    const data = await res.json();
+
+    if (data.exists) {
+      document.getElementById("duplicateText").textContent = `A record for "${firstName} ${lastName}" already exists in test "${userInfo.code}". Please contact your instructor.`;
+      duplicateModal.show();
+      return;
+    }
+
+    // No duplicate: Proceed, show spinner
+    try { await requestFullscreen(); } catch (e) {}
+    startCard.style.display = "none";
+    resultEl.textContent = "Exam in progress...";
+    isExamActive = true;
+
+    // Show loading spinner with dynamic message
+    document.getElementById("loadingCode").textContent = userInfo.code;
+    loadingSpinner.classList.remove("d-none"); // Show spinner
+
+    // Batch load questions
+    const batchSuccess = await fetchAllQuestionsAndAnswers();
+
+    // Hide spinner
+    loadingSpinner.classList.add("d-none");
+
+    if (batchSuccess && questions.length > 0) {
+      current = 0;
+      score = 0;
+      userAnswers = {};
+      renderQuestion(0);
+    } else {
+      // Error already handled in fetchAllQuestionsAndAnswers (modal shown)
+    }
+  } catch (err) {
+    // Connection/duplicate check error
+    console.error("Start error:", err);
+    document.getElementById("errorText").innerHTML = `
+      <strong>Connection or Validation Error:</strong><br>
+      ${err.message}<br><br>
+      <small>Check: Internet connection, web app URL in script.js, or contact admin.</small>
+    `;
+    errorModal.show();
+    // Reset
+    isExamActive = false;
+    startCard.style.display = "block";
+    resultEl.textContent = "Enter your details to begin the exam.";
+    loadingSpinner.classList.add("d-none");
+  }
+});
