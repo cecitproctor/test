@@ -105,28 +105,30 @@ function updateHud(elementId, text) {
 function renderQuestion(index) {
   quizDiv.innerHTML = "";
   const q = questions[index];
-  if (!q) return; // Safety check
+  if (!q) {
+    console.error("No question at index", index, "- questions array:", questions); // Debug
+    return;
+  }
+  console.log("Rendering question:", q); // Debug: Shows {code, question, answer}
+  
   updateHud("progress", `Question ${index + 1}/${questions.length}`);
-
   const card = document.createElement("div");
-  card.className = "card card-custom mx-auto fade-in";
+  card.className = "card card-custom mx-auto fade-in"; // Keep, but CSS will fix visibility
   card.innerHTML = `
     <div class="card-body p-4">
-       <div class="question-text">${q.question}</div> 
-       <input type="text" class="form-control answer-input" id="ansInput" autocomplete="off" autofocus placeholder="Enter answer in CAPS (e.g., B for option b)" style="resize: vertical;"> 
-       <button class="btn btn-accent mt-3 w-100" id="submitBtn">Submit</button> 
-     </div>
+      <h5 class="card-title mb-3">Question: ${q.code}</h5> <!-- Added for clarity -->
+      <div class="question-text fs-5 mb-3">${q.question}</div> 
+      <input type="text" class="form-control answer-input mb-3" id="ansInput" autocomplete="off" autofocus placeholder="Enter answer (e.g., A for option a)" style="resize: vertical;"> 
+      <button class="btn btn-primary mt-2 w-100" id="submitBtn">Submit Answer</button> 
+    </div>
   `;
   quizDiv.appendChild(card);
-
-  // Trigger fade-in animation
-  setTimeout(() => card.classList.add("show"), 10);
-
-  startTimer(); // start/reset timer for this question
-  if (current === 0) { // Only on first question
-     updateHud("timer", `Time: ${formatTime(examTimerSeconds)} per question`);
-   }
-
+  // Animation (CSS will handle visibility)
+  setTimeout(() => card.classList.add("show"), 100); // Slight delay for effect
+  startTimer();
+  if (index === 0) { // Use index, not current
+    updateHud("timer", `Time: ${formatTime(examTimerSeconds)} per question`);
+  }
   const submit = () => {
     const ans = document.getElementById("ansInput").value.trim() || "-";
     showConfirmModal(ans, () => submitAnswer(ans));
@@ -484,13 +486,17 @@ startBtn.addEventListener("click", async () => {
     // Hide spinner
     loadingSpinner.classList.add("d-none");
 
+    // After batch load success
     if (batchSuccess && questions.length > 0) {
+      // Show quiz container
+      document.getElementById("quizContainer").style.display = "block";
+      
       current = 0;
       score = 0;
       userAnswers = {};
       renderQuestion(0);
     } else {
-      // Error already handled in fetchAllQuestionsAndAnswers (modal shown)
+      // Error handled in fetch
     }
   } catch (err) {
     // Connection/duplicate check error
