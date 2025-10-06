@@ -29,52 +29,54 @@
     </div>
 
 
-<div class="container mt-4">
-        <h1 class="text-center mb-4">Quiz Application</h1>
-        
-        <!-- Login Form -->
-        <div id="startCard" class="card mb-4">
-            <div class="card-body">
-                <h2 class="card-title text-center">Login to Start Quiz</h2>
-                <div class="mb-3">
-                    <label for="lastName" class="form-label">Last Name:</label>
-                    <input type="text" class="form-control" id="lastName" required>
-                </div>
-                <div class="mb-3">
-                    <label for="firstName" class="form-label">First Name:</label>
-                    <input type="text" class="form-control" id="firstName" required>
-                </div>
-                <div class="mb-3">
-                    <label for="code" class="form-label">Test Code (e.g., TEST001):</label>
-                    <input type="text" class="form-control" id="code" placeholder="TEST001" required>
-                </div>
-                <button type="button" id="startBtn" class="btn btn-primary w-100">Start Quiz</button>
-            </div>
-        </div>
-  <!-- HUD Elements (Progress and Timer - Always Visible) -->
-        <div id="result" class="alert alert-info mb-3">Enter your details to begin the exam.</div>
-        <div class="row mb-3">
-            <div class="col-md-6">
-                <div id="progress" class="progress-bar bg-success">Question 0/0</div> <!-- Or use Bootstrap progress if needed -->
-            </div>
-            <div class="col-md-6 text-end">
-                <div id="timer" class="timer-display badge bg-warning">Time: 00:30</div>
-            </div>
-        </div>
-        <!-- Quiz Container (Initially Hidden) -->
-        <div id="quizContainer" style="display: none;"> <!-- Changed from d-none to inline style for easy JS toggle -->
-            <div id="quiz" class="quiz-area card border-0 shadow"></div> <!-- quizDiv - Now with basic card wrapper -->
-        </div>
+    <!-- Start Card with Form -->
+    <div class="card card-custom mx-auto" style="max-width: 600px;" id="startCard">
+      <div class="card-body text-center">
+        <h5 class="card-title" id="result">Enter your details to begin the exam.</h5>
+        <form id="userForm">
+          <div class="form-floating mb-3">
+            <input type="text" class="form-control" id="lastName" placeholder="Last Name" required autocomplete="off">
+            <label for="lastName">Last Name (Required)</label>
+          </div>
+          <div class="form-floating mb-3">
+            <input type="text" class="form-control" id="firstName" placeholder="First Name" required autocomplete="off">
+            <label for="firstName">First Name (Required)</label>
+          </div>
+          <div class="form-floating mb-3">
+            <input type="text" class="form-control" id="code" placeholder="Test Code" required autocomplete="off">
+            <label for="code">Test Code (Ask your Instructor)</label>
+          </div>
+        </form>
+        <button class="btn btn-accent btn-lg" id="startBtn">
+          <i class="bi bi-play-circle me-2"></i>START EXAM
+        </button>
         <!-- Loading Spinner -->
-        <div id="loadingSpinner" class="d-none text-center p-4" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(255,255,255,0.9); border-radius: 10px;">
-            <div class="spinner-border text-primary mb-2" role="status" style="width: 3rem; height: 3rem;">
-                <span class="visually-hidden">Loading...</span>
-            </div>
-            <p>Loading questions for <span id="loadingCode"></span>... Please wait.</p>
+        <div class="loading-spinner" id="loadingSpinner">
+          <div class="spinner-border spinner-border-custom" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <p class="mt-2">Loading exam... Please wait.</p>
         </div>
+      </div>
     </div>
 
-
+    
+  <!-- Quiz Container (Hidden Initially) -->
+        <div id="quizContainer" class="d-none">
+            <div id="result" class="alert alert-info">Enter your details to begin the exam.</div>
+            <div id="progress" class="progress-bar"></div> <!-- Or your HUD -->
+            <div id="timer" class="timer-display"></div>
+            <div id="quiz" class="quiz-area"></div> <!-- Your quizDiv -->
+            <button id="submitBtn" class="btn btn-success d-none">Submit</button>
+        </div>
+        <!-- Loading Spinner (Bootstrap Circling Animation) -->
+        <div id="loadingSpinner" class="d-none text-center p-4">
+            <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+                <span class="visually-hidden">Loading quiz...</span>
+            </div>
+            <p class="mt-2">Loading questions for <span id="loadingCode"></span>... Please wait.</p>
+        </div>
+    </div>
   </main>
 
   <!-- Footer -->
@@ -148,16 +150,18 @@
     </div>
   </div>
 
-    <!-- Error Modal (Enhanced) -->
-    <div class="modal fade" id="errorModal" tabindex="-1" aria-labelledby="errorModalLabel">
+<!-- Enhanced Error Modal (Dynamic Messages for Connection/Sheet/Questions Issues) -->
+    <div class="modal fade" id="errorModal" tabindex="-1" aria-labelledby="errorModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="errorModalLabel">Error</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <h5 class="modal-title" id="errorModalLabel">Error Starting Quiz</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <div id="errorText" class="alert alert-danger"></div>
+                    <div id="errorText" class="alert alert-danger">
+                        <!-- Dynamic content: e.g., "Connection failed: Check internet." or "No sheet found for TEST001." -->
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" id="errorOk" data-bs-dismiss="modal">OK</button>
@@ -165,6 +169,7 @@
             </div>
         </div>
     </div>
+
   
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="script.js"></script>
