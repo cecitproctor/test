@@ -290,36 +290,57 @@ function finishExam() {
   // Trigger fade-in
   setTimeout(() => resultsCard.classList.add("show"), 10);
 
-  // Record grade to test sheet (unified: append to columns F-N with computed correct/mistakes)
-  userInfo.endTime = new Date().toISOString();
-  userInfo.date = userInfo.endTime.split('T')[0];
-  const submittedAnswersJson = JSON.stringify(userAnswers); // {qCode: ans} for backend processing
+       // FIXED: Record grade via POST (handles long JSON); add UI confirmation above results
+     userInfo.endTime = new Date().toISOString();
+     userInfo.date = userInfo.endTime.split('T')[0]; // Consistent date from endTime
+     const submittedAnswersJson = JSON.stringify(userAnswers); // {qCode: ans} for backend processing
 
-fetch(ANSWER_API_URL, {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-  body: new URLSearchParams({
-    action: 'recordGrade',
-    lastName: userInfo.lastName,
-    firstName: userInfo.firstName,
-    code: userInfo.code,
-    submittedAnswers: submittedAnswersJson,
-    startTime: userInfo.startTime,
-    endTime: userInfo.endTime,
-    date: userInfo.date
-  })
-})
-  .then(res => res.json())
-  .then(data => {
-    if (data.success) {
-      console.log("Grade and answers recorded successfully to sheet '" + userInfo.code + "'");
-    } else {
-      console.error("Failed to record grade:", data.error);
-    }
-  })
-  .catch(err => {
-    console.error("Failed to record grade:", err);
-  });
+     // Create confirmation div (will be inserted above score)
+     const confirmationDiv = document.createElement('div');
+     confirmationDiv.id = 'submissionStatus';
+     confirmationDiv.className = 'mb-3 p-2 rounded'; // Bootstrap styling
+     confirmationDiv.style.fontWeight = 'bold';
+
+     fetch(ANSWER_API_URL, {
+       method: 'POST',
+       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+       body: new URLSearchParams({
+         action: 'recordGrade',
+         lastName: userInfo.lastName,
+         firstName: userInfo.firstName,
+         code: userInfo.code,
+         submittedAnswers: submittedAnswersJson,
+         startTime: userInfo.startTime,
+         endTime: userInfo.endTime,
+         date: userInfo.date
+       })
+     })
+       .then(res => {
+         if (!res.ok) throw new Error(`HTTP ${res.status}: Submission failed`);
+         return res.json();
+       })
+       .then(data => {
+         if (data.success) {
+           console.log("Grade and answers recorded successfully to sheet '" + userInfo.code + "'");
+           confirmationDiv.textContent = '✓ Score submitted successfully!';
+           confirmationDiv.className += ' bg-success text-white';
+         } else {
+           console.error("Failed to record grade:", data.error);
+           confirmationDiv.textContent = '⚠ Submission failed: ' + (data.error || 'Unknown error. Contact admin.');
+           confirmationDiv.className += ' bg-danger text-white';
+         }
+         // Insert above the score h3
+         const scoreEl = resultsCard.querySelector('h3');
+         if (scoreEl) scoreEl.parentNode.insertBefore(confirmationDiv, scoreEl);
+       })
+       .catch(err => {
+         console.error("Failed to record grade:", err);
+         confirmationDiv.textContent = '⚠ Network error during submission. Score may not be saved.';
+         confirmationDiv.className += ' bg-warning text-dark';
+         const scoreEl = resultsCard.querySelector('h3');
+         if (scoreEl) scoreEl.parentNode.insertBefore(confirmationDiv, scoreEl);
+       });
+     
 
   // 5-minute countdown to reset
   let countdown = 300;
