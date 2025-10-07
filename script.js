@@ -69,7 +69,9 @@ function formatTime(s) {
 
 function startTimer() {
   clearInterval(timer);
-  remaining = examTimerSeconds; // Dynamic from sheet
+ const currentQ = questions[current];
+ remaining = currentQ ? (currentQ.timerSeconds || examTimerSeconds) : examTimerSeconds;
+     
   updateHud("timer", "Time: " + formatTime(remaining));
   timer = setInterval(() => {
     remaining--;
@@ -132,14 +134,14 @@ function renderQuestion(index) {
     showConfirmModal(ans, () => submitAnswer(ans));
   };
 
-  document.getElementById("submitBtn").addEventListener("click", submit);
+  document.getElementById("submitBtn").addEventListener("click", submit, {once: true});
   document.getElementById("ansInput").addEventListener("keydown", e => {
     if (e.key === "Enter") {
       e.preventDefault();
       if (confirmOpen) return; // ignore Enter if confirm is open
       submit();
     }
-  });
+  }, {once: true});
 }
 
 /* ------------------ Submit Answer (Instant from Batch Map) ------------------ */
@@ -290,29 +292,34 @@ function finishExam() {
 
   // Record grade to test sheet (unified: append to columns F-N with computed correct/mistakes)
   userInfo.endTime = new Date().toISOString();
-  userInfo.date = new Date().toISOString().split('T')[0];
+  userInfo.date = userInfo.endTime.split('T')[0];
   const submittedAnswersJson = JSON.stringify(userAnswers); // {qCode: ans} for backend processing
-  const recordUrl = `${ANSWER_API_URL}?action=recordGrade` +
-    `&lastName=${encodeURIComponent(userInfo.lastName)}` +
-    `&firstName=${encodeURIComponent(userInfo.firstName)}` +
-    `&code=${encodeURIComponent(userInfo.code)}` +
-    `&submittedAnswers=${encodeURIComponent(submittedAnswersJson)}` +
-    `&startTime=${encodeURIComponent(userInfo.startTime)}` +
-    `&endTime=${encodeURIComponent(userInfo.endTime)}` +
-    `&date=${encodeURIComponent(userInfo.date)}`;
 
-  fetch(recordUrl)
-    .then(res => res.json())
-    .then(data => {
-      if (data.success) {
-        console.log("Grade and answers recorded successfully to sheet '" + userInfo.code + "'");
-      } else {
-        console.error("Failed to record grade:", data.error);
-      }
-    })
-    .catch(err => {
-      console.error("Failed to record grade:", err);
-    });
+fetch(ANSWER_API_URL, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+  body: new URLSearchParams({
+    action: 'recordGrade',
+    lastName: userInfo.lastName,
+    firstName: userInfo.firstName,
+    code: userInfo.code,
+    submittedAnswers: submittedAnswersJson,
+    startTime: userInfo.startTime,
+    endTime: userInfo.endTime,
+    date: userInfo.date
+  })
+})
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      console.log("Grade and answers recorded successfully to sheet '" + userInfo.code + "'");
+    } else {
+      console.error("Failed to record grade:", data.error);
+    }
+  })
+  .catch(err => {
+    console.error("Failed to record grade:", err);
+  });
 
   // 5-minute countdown to reset
   let countdown = 300;
