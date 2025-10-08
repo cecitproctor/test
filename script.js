@@ -46,7 +46,7 @@ let examTimerSeconds = 30;
 let userInfo = { lastName: '', firstName: '', code: '', startTime: '', endTime: '', date: '' }; // Removed email, teacher, subject, schedule
 
 // Replace this with your actual Google Apps Script Web App URL
-const ANSWER_API_URL = "https://script.google.com/macros/s/AKfycbwC2Kxq1MVzOx7zx_Bo-t5cQCkpI__gN1Xq_WzmyUwxyNuoaF8M420go2JPXJC8V7vo/exec";
+const ANSWER_API_URL = "https://script.google.com/macros/s/AKfycbwRWkWnJgXRrfOsgyI0lU-3rN6czexQO5L2z2NRTxpbzVMCZ5QXrqslAC-X1Q_e4a_o/exec";
 
 let tabWarnings = 0;
 let isExamActive = false;
@@ -103,6 +103,19 @@ function updateHud(elementId, text) {
   }
 }
 
+// NEW: Global Enter handler for submit (robustness - catches Enter anywhere during exam)
+function globalEnterHandler(e) {
+  if (e.key === "Enter" && isExamActive && !confirmOpen) {
+    e.preventDefault();
+    const ansInput = document.getElementById("ansInput");
+    if (ansInput) {
+      const ans = ansInput.value.trim() || "-";
+      showConfirmModal(ans, () => submitAnswer(ans));
+    }
+  }
+}
+
+/* ------------------ Render Question with Fade-In Animation (Dynamic) ------------------ */
 /* ------------------ Render Question with Fade-In Animation (Dynamic) ------------------ */
 function renderQuestion(index) {
   quizDiv.innerHTML = "";
@@ -112,10 +125,16 @@ function renderQuestion(index) {
 
   const card = document.createElement("div");
   card.className = "card card-custom mx-auto fade-in";
+
+  // NEW: Create question div separately to support HTML (<br> for line breaks/formatting)
+  const questionDiv = document.createElement("div");
+  questionDiv.className = "question-text";
+  questionDiv.innerHTML = q.question; // Use innerHTML to render <br> as newlines (e.g., options)
+
   card.innerHTML = `
     <div class="card-body p-4">
-       <div class="question-text">${q.question}</div> 
-       <input type="text" class="form-control answer-input" id="ansInput" autocomplete="off" autofocus placeholder="Enter answer in CAPS (e.g., B for option b)" style="resize: vertical;"> 
+       ${questionDiv.outerHTML}
+       <input type="text" class="form-control answer-input" id="ansInput" autocomplete="off" autofocus placeholder="Enter answer in CAPS (e.g., B for option b)" style="resize: vertical; transition: border-color 0.3s;"> 
        <button class="btn btn-accent mt-3 w-100" id="submitBtn">Submit</button> 
      </div>
   `;
@@ -128,6 +147,18 @@ function renderQuestion(index) {
   if (current === 0) { // Only on first question
      updateHud("timer", `Time: ${formatTime(examTimerSeconds)} per question`);
    }
+
+  // NEW: Enhanced direct focus - select text, highlight input briefly (no click needed)
+  const ansInput = document.getElementById("ansInput");
+  if (ansInput) {
+    setTimeout(() => { // Slight delay to ensure DOM ready
+      ansInput.focus();
+      ansInput.select(); // Select any text (ready to overwrite/type)
+      // Brief visual highlight to draw attention
+      ansInput.classList.add("focus-highlight");
+      setTimeout(() => ansInput.classList.remove("focus-highlight"), 1000);
+    }, 100);
+  }
 
   const submit = () => {
     const ans = document.getElementById("ansInput").value.trim() || "-";
@@ -268,6 +299,7 @@ function showConfirmModal(answer, onConfirm) {
 function finishExam() {
   clearInterval(timer);
   isExamActive = false;
+  document.removeEventListener("keydown", globalEnterHandler);
   quizDiv.innerHTML = "";
   updateHud("progress", "Exam Completed");
   resultEl.textContent = "Exam Finished";
@@ -363,6 +395,8 @@ function resetExam() {
   setTimeout(() => {
     quizDiv.innerHTML = "";
     quizDiv.style.opacity = "1";
+    // NEW: Ensure global Enter listener is removed
+    document.removeEventListener("keydown", globalEnterHandler);
     resultEl.textContent = "Enter your details to begin the exam.";
     startBtn.style.display = "block";
     startCard.style.display = "block";
@@ -516,6 +550,7 @@ startBtn.addEventListener("click", async () => {
       current = 0;
       score = 0;
       userAnswers = {};
+      document.addEventListener("keydown", globalEnterHandler);
       renderQuestion(0);
     } else {
       // Error already handled in fetchAllQuestionsAndAnswers (modal shown)
