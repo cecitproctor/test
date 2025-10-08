@@ -70,11 +70,9 @@
             <button id="submitBtn" class="btn btn-success d-none">Submit</button>
         </div>
         <!-- Loading Spinner (Bootstrap Circling Animation) -->
-        <div id="loadingSpinner" class="d-none text-center p-4">
-            <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
-                <span class="visually-hidden">Loading quiz...</span>
-            </div>
-            <p class="mt-2">Loading questions for <span id="loadingCode"></span>... Please wait.</p>
+        <div id="loadingSpinner" class="d-none text-center mt-4">
+          <span class="loader"></span> <!-- Custom loader -->
+          <p class="mt-2" id="loadingCode">Loading test <span id="codePlaceholder"></span>...</p>
         </div>
     </div>
   </main>
