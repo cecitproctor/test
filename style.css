@@ -420,3 +420,9 @@
  #errorText {
      white-space: pre-line; /* Preserve line breaks in messages */
  }
+
+
+.focus-highlight {
+  border-color: #007bff !important;
+  box-shadow: 0 0 5px rgba(0, 123, 255, 0.5) !important;
+}
