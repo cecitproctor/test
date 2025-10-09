@@ -41,14 +41,12 @@ let userAnswers = {}; // Changed to object: {qCode: userAnswer} for JSON submiss
 let score = 0;
 let current = 0;
 let timer;
-let nextButton = null; 
-let finishButton = null;
 let remaining = 30; // 30 seconds per question
 let examTimerSeconds = 30;
 let userInfo = { lastName: '', firstName: '', code: '', startTime: '', endTime: '', date: '' }; // Removed email, teacher, subject, schedule
 
 // Replace this with your actual Google Apps Script Web App URL
-const ANSWER_API_URL = "https://script.google.com/macros/s/AKfycbxOM8NHibfMPVNNNz4cmW4m9TmFfXFz7XdH_jE94BdsyQdnpO7f3iHLEAHhQX_57tuf/exec";
+const ANSWER_API_URL = "https://script.google.com/macros/s/AKfycbwRWkWnJgXRrfOsgyI0lU-3rN6czexQO5L2z2NRTxpbzVMCZ5QXrqslAC-X1Q_e4a_o/exec";
 
 let tabWarnings = 0;
 let isExamActive = false;
@@ -87,21 +85,12 @@ function startTimer() {
 
 function autoSubmitAnswer() {
   const ansInput = document.getElementById("ansInput");
-  const ans = ansInput ? ansInput.value.trim() : "";
-  const q = questions[current];
+  const ans = ansInput ? ansInput.value.trim() || "-" : "-";
+  const q = questions[current]; // Get current q for code
   if (q) {
-    if (ans === "") {
-      userAnswers[q.code] = "PASSED"; // Timeout = pass
-    } else {
-      userAnswers[q.code] = ans;
-      if (ans.toLowerCase() === answersMap[q.code].toLowerCase()) {
-        score++;
-      }
-    }
+    userAnswers[q.code] = ans; // Use code as key
   }
-  // NEW: Advance to next unanswered on timeout
-  goToNextUnanswered();
-  renderQuestionList();
+  submitAnswer(ans);
 }
 
 /* ------------------ HUD Update with Animation ------------------ */
@@ -127,6 +116,7 @@ function globalEnterHandler(e) {
 }
 
 /* ------------------ Render Question with Fade-In Animation (Dynamic) ------------------ */
+/* ------------------ Render Question with Fade-In Animation (Dynamic) ------------------ */
 function renderQuestion(index) {
   quizDiv.innerHTML = "";
   const q = questions[index];
@@ -135,20 +125,17 @@ function renderQuestion(index) {
 
   const card = document.createElement("div");
   card.className = "card card-custom mx-auto fade-in";
-  
-  // NEW: Support HTML in question (from backend formatting)
+
+  // NEW: Create question div separately to support HTML (<br> for line breaks/formatting)
   const questionDiv = document.createElement("div");
   questionDiv.className = "question-text";
-  questionDiv.innerHTML = q.question; // Renders <br> for options
+  questionDiv.innerHTML = q.question; // Use innerHTML to render <br> as newlines (e.g., options)
 
   card.innerHTML = `
     <div class="card-body p-4">
        ${questionDiv.outerHTML}
        <input type="text" class="form-control answer-input" id="ansInput" autocomplete="off" autofocus placeholder="Enter answer in CAPS (e.g., B for option b)" style="resize: vertical; transition: border-color 0.3s;"> 
-       <div class="d-flex gap-2 mt-3">
-         <button class="btn btn-outline-secondary flex-fill" id="passBtn">Pass</button>
-         <button class="btn btn-accent flex-fill" id="submitBtn">Submit</button>
-       </div>
+       <button class="btn btn-accent mt-3 w-100" id="submitBtn">Submit</button> 
      </div>
   `;
   quizDiv.appendChild(card);
@@ -157,16 +144,17 @@ function renderQuestion(index) {
   setTimeout(() => card.classList.add("show"), 10);
 
   startTimer(); // start/reset timer for this question
-  if (index === 0) { // Only on first question
+  if (current === 0) { // Only on first question
      updateHud("timer", `Time: ${formatTime(examTimerSeconds)} per question`);
    }
 
-  // Enhanced direct focus (as before)
+  // NEW: Enhanced direct focus - select text, highlight input briefly (no click needed)
   const ansInput = document.getElementById("ansInput");
   if (ansInput) {
-    setTimeout(() => {
+    setTimeout(() => { // Slight delay to ensure DOM ready
       ansInput.focus();
-      ansInput.select();
+      ansInput.select(); // Select any text (ready to overwrite/type)
+      // Brief visual highlight to draw attention
       ansInput.classList.add("focus-highlight");
       setTimeout(() => ansInput.classList.remove("focus-highlight"), 1000);
     }, 100);
@@ -174,120 +162,18 @@ function renderQuestion(index) {
 
   const submit = () => {
     const ans = document.getElementById("ansInput").value.trim() || "-";
-    if (ans === "-") return; // Don't submit empty without pass
     showConfirmModal(ans, () => submitAnswer(ans));
   };
-
-  // NEW: Pass button handler
-  document.getElementById("passBtn").addEventListener("click", () => {
-    const qCode = q.code;
-    userAnswers[qCode] = "PASSED";
-    // Optional: Advance to next unanswered
-    goToNextUnanswered();
-    renderQuestionList(); // Update list
-  }, {once: true});
 
   document.getElementById("submitBtn").addEventListener("click", submit, {once: true});
   document.getElementById("ansInput").addEventListener("keydown", e => {
     if (e.key === "Enter") {
       e.preventDefault();
-      if (confirmOpen) return;
+      if (confirmOpen) return; // ignore Enter if confirm is open
       submit();
     }
   }, {once: true});
-
-  // NEW: Render the navigation list after question
-  renderQuestionList();
 }
-
-
-/* ------------------ Render Question Navigation List (Dynamic Sidebar) ------------------ */
-function renderQuestionList() {
-  // Remove existing list if present
-  const existingList = document.getElementById('questionList');
-  if (existingList) existingList.remove();
-
-  const listContainer = document.createElement('div');
-  listContainer.id = 'questionList';
-  listContainer.className = 'mt-4';
-  listContainer.innerHTML = `
-    <h6 class="mb-2 text-muted">Question Navigation</h6>
-    <div class="list-group list-group-horizontal-sm" id="navList" style="max-height: 200px; overflow-y: auto;">
-      ${questions.map((q, index) => {
-        const qCode = q.code;
-        const status = userAnswers[qCode];
-        let btnClass = 'btn btn-sm btn-outline-secondary me-1 mb-1'; // Default (unanswered)
-        let badgeText = '';
-        
-        if (status && status.toUpperCase() === 'PASSED') {
-          btnClass = 'btn btn-sm btn-warning me-1 mb-1'; // Yellow for passed
-          badgeText = ' (Passed)';
-        } else if (status) {
-          // Check if correct (for color)
-          const isCorrect = status.toLowerCase() === answersMap[qCode].toLowerCase();
-          btnClass = isCorrect ? 'btn btn-sm btn-success me-1 mb-1' : 'btn btn-sm btn-danger me-1 mb-1';
-          badgeText = isCorrect ? ' (Correct)' : ' (Wrong)';
-        }
-        
-        return `<button class="${btnClass}" onclick="navigateToQuestion(${index})">${index + 1}${badgeText}</button>`;
-      }).join('')}
-      <!-- NEW: Dynamic Next and Finish buttons -->
-      <button id="nextBtn" class="btn btn-sm btn-accent ms-2" onclick="goToNextUnanswered()" style="display: none;">Next</button>
-      <button id="finishBtn" class="btn btn-sm btn-primary ms-2" onclick="finishExam()" style="display: none;">Finish Exam</button>
-    </div>
-  `;
-  
-  // Append to quizDiv (below current card)
-  const currentCard = quizDiv.querySelector('.card');
-  if (currentCard) {
-    currentCard.parentNode.insertBefore(listContainer, currentCard.nextSibling);
-  } else {
-    quizDiv.appendChild(listContainer);
-  }
-  
-  // Update button visibility
-  updateNavigationButtons();
-}
-
-/* ------------------ Navigation Helpers ------------------ */
-function navigateToQuestion(index) {
-  if (index < 0 || index >= questions.length || !isExamActive) return;
-  current = index;
-  renderQuestion(current);
-  renderQuestionList(); // Refresh list highlights
-  // Restart timer for new question
-  clearInterval(timer);
-  startTimer();
-}
-
-function goToNextUnanswered() {
-  for (let i = current + 1; i < questions.length; i++) {
-    const qCode = questions[i].code;
-    if (!userAnswers[qCode]) {
-      navigateToQuestion(i);
-      return;
-    }
-  }
-  // If no unanswered, show Finish
-  updateNavigationButtons();
-}
-
-function updateNavigationButtons() {
-  nextButton = document.getElementById('nextBtn');
-  finishButton = document.getElementById('finishBtn');
-  
-  if (nextButton) {
-    const hasUnanswered = questions.some((q, i) => i > current && !userAnswers[q.code]);
-    nextButton.style.display = hasUnanswered ? 'inline-block' : 'none';
-  }
-  
-  if (finishButton) {
-    // Show Finish if all questions are answered or passed
-    const allHandled = questions.every(q => userAnswers[q.code]);
-    finishButton.style.display = allHandled ? 'inline-block' : 'none';
-  }
-}
-
 
 /* ------------------ Submit Answer (Instant from Batch Map) ------------------ */
 function submitAnswer(userAnswer) {
@@ -296,17 +182,20 @@ function submitAnswer(userAnswer) {
   const q = questions[current];
   if (!q) return;
 
-  const correctAnswer = answersMap[q.code] || "";
+  const correctAnswer = answersMap[q.code] || ""; // Instant lookup from batch
 
-  userAnswers[q.code] = userAnswer;
+  userAnswers[q.code] = userAnswer; // Changed: Use q.code as key (object, not array)
 
-  if (userAnswer.toLowerCase() !== "passed" && userAnswer.toLowerCase() === correctAnswer.toLowerCase()) {
+  if (userAnswer.toLowerCase() === correctAnswer.toLowerCase()) {
     score++;
   }
 
-  // NEW: No auto-advance; stay on question and refresh list
-  renderQuestionList(); // Update statuses
-  // Optionally re-render current if needed, but list handles navigation
+  current++;
+  if (current < questions.length) {
+    renderQuestion(current);
+  } else {
+    finishExam();
+  }
 }
 
 /* ------------------ Batch Fetch Questions and Answers from Sheet ------------------ */
@@ -408,11 +297,6 @@ function showConfirmModal(answer, onConfirm) {
 
 /* ------------------ Finish Exam & Record Grade (with Fade-In) ------------------ */
 function finishExam() {
-  const allHandled = questions.every(q => userAnswers[q.code]);
-  if (!allHandled) {
-    alert("Please answer or pass all questions before finishing.");
-    return;
-  }
   clearInterval(timer);
   isExamActive = false;
   document.removeEventListener("keydown", globalEnterHandler);
@@ -438,56 +322,57 @@ function finishExam() {
   // Trigger fade-in
   setTimeout(() => resultsCard.classList.add("show"), 10);
 
-  // Record grade via POST (handles long JSON); add UI confirmation above results
-  userInfo.endTime = new Date().toISOString();
-  userInfo.date = userInfo.endTime.split('T')[0]; // Consistent date from endTime
-  const submittedAnswersJson = JSON.stringify(userAnswers); // {qCode: ans} for backend processing
+       // FIXED: Record grade via POST (handles long JSON); add UI confirmation above results
+     userInfo.endTime = new Date().toISOString();
+     userInfo.date = userInfo.endTime.split('T')[0]; // Consistent date from endTime
+     const submittedAnswersJson = JSON.stringify(userAnswers); // {qCode: ans} for backend processing
 
-  // Create confirmation div (will be inserted above score)
-  const confirmationDiv = document.createElement('div');
-  confirmationDiv.id = 'submissionStatus';
-  confirmationDiv.className = 'mb-3 p-2 rounded'; // Bootstrap styling
-  confirmationDiv.style.fontWeight = 'bold';
+     // Create confirmation div (will be inserted above score)
+     const confirmationDiv = document.createElement('div');
+     confirmationDiv.id = 'submissionStatus';
+     confirmationDiv.className = 'mb-3 p-2 rounded'; // Bootstrap styling
+     confirmationDiv.style.fontWeight = 'bold';
 
-  fetch(ANSWER_API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      action: 'recordGrade',
-      lastName: userInfo.lastName,
-      firstName: userInfo.firstName,
-      code: userInfo.code,
-      submittedAnswers: submittedAnswersJson,
-      startTime: userInfo.startTime,
-      endTime: userInfo.endTime,
-      date: userInfo.date
-    })
-  })
-    .then(res => {
-      if (!res.ok) throw new Error(`HTTP ${res.status}: Submission failed`);
-      return res.json();
-    })
-    .then(data => {
-      if (data.success) {
-        console.log("Grade and answers recorded successfully to sheet '" + userInfo.code + "'");
-        confirmationDiv.textContent = '✓ Score submitted successfully!';
-        confirmationDiv.className += ' bg-success text-white';
-      } else {
-        console.error("Failed to record grade:", data.error);
-        confirmationDiv.textContent = '⚠ Submission failed: ' + (data.error || 'Unknown error. Contact admin.');
-        confirmationDiv.className += ' bg-danger text-white';
-      }
-      // Insert above the score h3
-      const scoreEl = resultsCard.querySelector('h3');
-      if (scoreEl) scoreEl.parentNode.insertBefore(confirmationDiv, scoreEl);
-    })
-    .catch(err => {
-      console.error("Failed to record grade:", err);
-      confirmationDiv.textContent = '⚠ Network error during submission. Score may not be saved.';
-      confirmationDiv.className += ' bg-warning text-dark';
-      const scoreEl = resultsCard.querySelector('h3');
-      if (scoreEl) scoreEl.parentNode.insertBefore(confirmationDiv, scoreEl);
-    });
+     fetch(ANSWER_API_URL, {
+       method: 'POST',
+       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+       body: new URLSearchParams({
+         action: 'recordGrade',
+         lastName: userInfo.lastName,
+         firstName: userInfo.firstName,
+         code: userInfo.code,
+         submittedAnswers: submittedAnswersJson,
+         startTime: userInfo.startTime,
+         endTime: userInfo.endTime,
+         date: userInfo.date
+       })
+     })
+       .then(res => {
+         if (!res.ok) throw new Error(`HTTP ${res.status}: Submission failed`);
+         return res.json();
+       })
+       .then(data => {
+         if (data.success) {
+           console.log("Grade and answers recorded successfully to sheet '" + userInfo.code + "'");
+           confirmationDiv.textContent = '✓ Score submitted successfully!';
+           confirmationDiv.className += ' bg-success text-white';
+         } else {
+           console.error("Failed to record grade:", data.error);
+           confirmationDiv.textContent = '⚠ Submission failed: ' + (data.error || 'Unknown error. Contact admin.');
+           confirmationDiv.className += ' bg-danger text-white';
+         }
+         // Insert above the score h3
+         const scoreEl = resultsCard.querySelector('h3');
+         if (scoreEl) scoreEl.parentNode.insertBefore(confirmationDiv, scoreEl);
+       })
+       .catch(err => {
+         console.error("Failed to record grade:", err);
+         confirmationDiv.textContent = '⚠ Network error during submission. Score may not be saved.';
+         confirmationDiv.className += ' bg-warning text-dark';
+         const scoreEl = resultsCard.querySelector('h3');
+         if (scoreEl) scoreEl.parentNode.insertBefore(confirmationDiv, scoreEl);
+       });
+     
 
   // 5-minute countdown to reset
   let countdown = 300;
@@ -501,7 +386,6 @@ function finishExam() {
     }
   }, 1000);
 }
-
 
 /* ------------------ Reset Exam (with Fade-Out) ------------------ */
 function resetExam() {
@@ -668,7 +552,6 @@ startBtn.addEventListener("click", async () => {
       userAnswers = {};
       document.addEventListener("keydown", globalEnterHandler);
       renderQuestion(0);
-      renderQuestionList();
     } else {
       // Error already handled in fetchAllQuestionsAndAnswers (modal shown)
     }
