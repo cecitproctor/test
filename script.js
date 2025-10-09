@@ -41,6 +41,8 @@ let userAnswers = {}; // Changed to object: {qCode: userAnswer} for JSON submiss
 let score = 0;
 let current = 0;
 let timer;
+let nextButton = null; 
+let finishButton = null;
 let remaining = 30; // 30 seconds per question
 let examTimerSeconds = 30;
 let userInfo = { lastName: '', firstName: '', code: '', startTime: '', endTime: '', date: '' }; // Removed email, teacher, subject, schedule
@@ -85,12 +87,21 @@ function startTimer() {
 
 function autoSubmitAnswer() {
   const ansInput = document.getElementById("ansInput");
-  const ans = ansInput ? ansInput.value.trim() || "-" : "-";
-  const q = questions[current]; // Get current q for code
+  const ans = ansInput ? ansInput.value.trim() : "";
+  const q = questions[current];
   if (q) {
-    userAnswers[q.code] = ans; // Use code as key
+    if (ans === "") {
+      userAnswers[q.code] = "PASSED"; // Timeout = pass
+    } else {
+      userAnswers[q.code] = ans;
+      if (ans.toLowerCase() === answersMap[q.code].toLowerCase()) {
+        score++;
+      }
+    }
   }
-  submitAnswer(ans);
+  // NEW: Advance to next unanswered on timeout
+  goToNextUnanswered();
+  renderQuestionList();
 }
 
 /* ------------------ HUD Update with Animation ------------------ */
@@ -116,7 +127,6 @@ function globalEnterHandler(e) {
 }
 
 /* ------------------ Render Question with Fade-In Animation (Dynamic) ------------------ */
-/* ------------------ Render Question with Fade-In Animation (Dynamic) ------------------ */
 function renderQuestion(index) {
   quizDiv.innerHTML = "";
   const q = questions[index];
@@ -125,17 +135,20 @@ function renderQuestion(index) {
 
   const card = document.createElement("div");
   card.className = "card card-custom mx-auto fade-in";
-
-  // NEW: Create question div separately to support HTML (<br> for line breaks/formatting)
+  
+  // NEW: Support HTML in question (from backend formatting)
   const questionDiv = document.createElement("div");
   questionDiv.className = "question-text";
-  questionDiv.innerHTML = q.question; // Use innerHTML to render <br> as newlines (e.g., options)
+  questionDiv.innerHTML = q.question; // Renders <br> for options
 
   card.innerHTML = `
     <div class="card-body p-4">
        ${questionDiv.outerHTML}
        <input type="text" class="form-control answer-input" id="ansInput" autocomplete="off" autofocus placeholder="Enter answer in CAPS (e.g., B for option b)" style="resize: vertical; transition: border-color 0.3s;"> 
-       <button class="btn btn-accent mt-3 w-100" id="submitBtn">Submit</button> 
+       <div class="d-flex gap-2 mt-3">
+         <button class="btn btn-outline-secondary flex-fill" id="passBtn">Pass</button>
+         <button class="btn btn-accent flex-fill" id="submitBtn">Submit</button>
+       </div>
      </div>
   `;
   quizDiv.appendChild(card);
@@ -144,17 +157,16 @@ function renderQuestion(index) {
   setTimeout(() => card.classList.add("show"), 10);
 
   startTimer(); // start/reset timer for this question
-  if (current === 0) { // Only on first question
+  if (index === 0) { // Only on first question
      updateHud("timer", `Time: ${formatTime(examTimerSeconds)} per question`);
    }
 
-  // NEW: Enhanced direct focus - select text, highlight input briefly (no click needed)
+  // Enhanced direct focus (as before)
   const ansInput = document.getElementById("ansInput");
   if (ansInput) {
-    setTimeout(() => { // Slight delay to ensure DOM ready
+    setTimeout(() => {
       ansInput.focus();
-      ansInput.select(); // Select any text (ready to overwrite/type)
-      // Brief visual highlight to draw attention
+      ansInput.select();
       ansInput.classList.add("focus-highlight");
       setTimeout(() => ansInput.classList.remove("focus-highlight"), 1000);
     }, 100);
@@ -162,18 +174,120 @@ function renderQuestion(index) {
 
   const submit = () => {
     const ans = document.getElementById("ansInput").value.trim() || "-";
+    if (ans === "-") return; // Don't submit empty without pass
     showConfirmModal(ans, () => submitAnswer(ans));
   };
+
+  // NEW: Pass button handler
+  document.getElementById("passBtn").addEventListener("click", () => {
+    const qCode = q.code;
+    userAnswers[qCode] = "PASSED";
+    // Optional: Advance to next unanswered
+    goToNextUnanswered();
+    renderQuestionList(); // Update list
+  }, {once: true});
 
   document.getElementById("submitBtn").addEventListener("click", submit, {once: true});
   document.getElementById("ansInput").addEventListener("keydown", e => {
     if (e.key === "Enter") {
       e.preventDefault();
-      if (confirmOpen) return; // ignore Enter if confirm is open
+      if (confirmOpen) return;
       submit();
     }
   }, {once: true});
+
+  // NEW: Render the navigation list after question
+  renderQuestionList();
 }
+
+
+/* ------------------ Render Question Navigation List (Dynamic Sidebar) ------------------ */
+function renderQuestionList() {
+  // Remove existing list if present
+  const existingList = document.getElementById('questionList');
+  if (existingList) existingList.remove();
+
+  const listContainer = document.createElement('div');
+  listContainer.id = 'questionList';
+  listContainer.className = 'mt-4';
+  listContainer.innerHTML = `
+    <h6 class="mb-2 text-muted">Question Navigation</h6>
+    <div class="list-group list-group-horizontal-sm" id="navList" style="max-height: 200px; overflow-y: auto;">
+      ${questions.map((q, index) => {
+        const qCode = q.code;
+        const status = userAnswers[qCode];
+        let btnClass = 'btn btn-sm btn-outline-secondary me-1 mb-1'; // Default (unanswered)
+        let badgeText = '';
+        
+        if (status && status.toUpperCase() === 'PASSED') {
+          btnClass = 'btn btn-sm btn-warning me-1 mb-1'; // Yellow for passed
+          badgeText = ' (Passed)';
+        } else if (status) {
+          // Check if correct (for color)
+          const isCorrect = status.toLowerCase() === answersMap[qCode].toLowerCase();
+          btnClass = isCorrect ? 'btn btn-sm btn-success me-1 mb-1' : 'btn btn-sm btn-danger me-1 mb-1';
+          badgeText = isCorrect ? ' (Correct)' : ' (Wrong)';
+        }
+        
+        return `<button class="${btnClass}" onclick="navigateToQuestion(${index})">${index + 1}${badgeText}</button>`;
+      }).join('')}
+      <!-- NEW: Dynamic Next and Finish buttons -->
+      <button id="nextBtn" class="btn btn-sm btn-accent ms-2" onclick="goToNextUnanswered()" style="display: none;">Next</button>
+      <button id="finishBtn" class="btn btn-sm btn-primary ms-2" onclick="finishExam()" style="display: none;">Finish Exam</button>
+    </div>
+  `;
+  
+  // Append to quizDiv (below current card)
+  const currentCard = quizDiv.querySelector('.card');
+  if (currentCard) {
+    currentCard.parentNode.insertBefore(listContainer, currentCard.nextSibling);
+  } else {
+    quizDiv.appendChild(listContainer);
+  }
+  
+  // Update button visibility
+  updateNavigationButtons();
+}
+
+/* ------------------ Navigation Helpers ------------------ */
+function navigateToQuestion(index) {
+  if (index < 0 || index >= questions.length || !isExamActive) return;
+  current = index;
+  renderQuestion(current);
+  renderQuestionList(); // Refresh list highlights
+  // Restart timer for new question
+  clearInterval(timer);
+  startTimer();
+}
+
+function goToNextUnanswered() {
+  for (let i = current + 1; i < questions.length; i++) {
+    const qCode = questions[i].code;
+    if (!userAnswers[qCode]) {
+      navigateToQuestion(i);
+      return;
+    }
+  }
+  // If no unanswered, show Finish
+  updateNavigationButtons();
+}
+
+function updateNavigationButtons() {
+  nextButton = document.getElementById('nextBtn');
+  finishButton = document.getElementById('finishBtn');
+  
+  if (nextButton) {
+    const hasUnanswered = questions.some((q, i) => i > current && !userAnswers[q.code]);
+    nextButton.style.display = hasUnanswered ? 'inline-block' : 'none';
+  }
+  
+  if (finishButton) {
+    // Show Finish if all questions are answered or passed
+    const allHandled = questions.every(q => userAnswers[q.code]);
+    finishButton.style.display = allHandled ? 'inline-block' : 'none';
+  }
+}
+
 
 /* ------------------ Submit Answer (Instant from Batch Map) ------------------ */
 function submitAnswer(userAnswer) {
@@ -182,20 +296,17 @@ function submitAnswer(userAnswer) {
   const q = questions[current];
   if (!q) return;
 
-  const correctAnswer = answersMap[q.code] || ""; // Instant lookup from batch
+  const correctAnswer = answersMap[q.code] || "";
 
-  userAnswers[q.code] = userAnswer; // Changed: Use q.code as key (object, not array)
+  userAnswers[q.code] = userAnswer;
 
-  if (userAnswer.toLowerCase() === correctAnswer.toLowerCase()) {
+  if (userAnswer.toLowerCase() !== "passed" && userAnswer.toLowerCase() === correctAnswer.toLowerCase()) {
     score++;
   }
 
-  current++;
-  if (current < questions.length) {
-    renderQuestion(current);
-  } else {
-    finishExam();
-  }
+  // NEW: No auto-advance; stay on question and refresh list
+  renderQuestionList(); // Update statuses
+  // Optionally re-render current if needed, but list handles navigation
 }
 
 /* ------------------ Batch Fetch Questions and Answers from Sheet ------------------ */
@@ -297,6 +408,16 @@ function showConfirmModal(answer, onConfirm) {
 
 /* ------------------ Finish Exam & Record Grade (with Fade-In) ------------------ */
 function finishExam() {
+  const allHandled = questions.every(q => userAnswers[q.code]);
+  if (!allHandled) {
+    alert("Please answer or pass all questions before finishing.");
+    return;
+  }
+  clearInterval(timer);
+  isExamActive = false;
+  // Remove global listeners if any (from previous enhancements)
+  if (typeof globalEnterHandler !== 'undefined') document.removeEventListener("keydown", globalEnterHandler);
+  
   clearInterval(timer);
   isExamActive = false;
   document.removeEventListener("keydown", globalEnterHandler);
@@ -552,6 +673,7 @@ startBtn.addEventListener("click", async () => {
       userAnswers = {};
       document.addEventListener("keydown", globalEnterHandler);
       renderQuestion(0);
+      renderQuestionList();
     } else {
       // Error already handled in fetchAllQuestionsAndAnswers (modal shown)
     }
