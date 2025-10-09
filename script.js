@@ -41,15 +41,12 @@ let userAnswers = {}; // Changed to object: {qCode: userAnswer} for JSON submiss
 let score = 0;
 let current = 0;
 let timer;
-let nextButton = null; 
-let finishButton = null;
-let questionTimers = {};
 let remaining = 30; // 30 seconds per question
 let examTimerSeconds = 30;
 let userInfo = { lastName: '', firstName: '', code: '', startTime: '', endTime: '', date: '' }; // Removed email, teacher, subject, schedule
 
 // Replace this with your actual Google Apps Script Web App URL
-const ANSWER_API_URL = "https://script.google.com/macros/s/AKfycbxOM8NHibfMPVNNNz4cmW4m9TmFfXFz7XdH_jE94BdsyQdnpO7f3iHLEAHhQX_57tuf/exec";
+const ANSWER_API_URL = "https://script.google.com/macros/s/AKfycbwRWkWnJgXRrfOsgyI0lU-3rN6czexQO5L2z2NRTxpbzVMCZ5QXrqslAC-X1Q_e4a_o/exec";
 
 let tabWarnings = 0;
 let isExamActive = false;
@@ -72,24 +69,12 @@ function formatTime(s) {
 
 function startTimer() {
   clearInterval(timer);
-  const q = questions[current];
-  if (!q) return;
-  const qCode = q.code;
-  
-  // UPDATED: Persistent timer - resume from saved or start fresh
-  remaining = questionTimers[qCode] !== undefined ? questionTimers[qCode] : (q.timerSeconds || examTimerSeconds);
-  if (remaining <= 0) {
-    remaining = 0; // Expired
-    updateHud("timer", "Time: 00:00 (Expired)");
-    // Auto-submit if expired on load
-    setTimeout(() => autoSubmitAnswer(), 500);
-    return;
-  }
-  
+ const currentQ = questions[current];
+ remaining = currentQ ? (currentQ.timerSeconds || examTimerSeconds) : examTimerSeconds;
+     
   updateHud("timer", "Time: " + formatTime(remaining));
   timer = setInterval(() => {
     remaining--;
-    questionTimers[qCode] = remaining; 
     updateHud("timer", "Time: " + formatTime(remaining));
     if (remaining <= 0) {
       clearInterval(timer);
@@ -100,22 +85,12 @@ function startTimer() {
 
 function autoSubmitAnswer() {
   const ansInput = document.getElementById("ansInput");
-  const ans = ansInput ? ansInput.value.trim() : "";
-  const q = questions[current];
+  const ans = ansInput ? ansInput.value.trim() || "-" : "-";
+  const q = questions[current]; // Get current q for code
   if (q) {
-    const qCode = q.code;
-    if (ans === "") {
-      userAnswers[qCode] = "SKIPPED"; // Timeout = skip
-    } else {
-      userAnswers[qCode] = ans;
-      if (ans.toLowerCase() !== "skipped" && ans.toLowerCase() === answersMap[qCode].toLowerCase()) {
-        score++;
-      }
-    }
-    questionTimers[qCode] = 0; // Time expired
+    userAnswers[q.code] = ans; // Use code as key
   }
-  goToNextUnanswered(); // Advance on timeout
-  renderQuestionList();
+  submitAnswer(ans);
 }
 
 /* ------------------ HUD Update with Animation ------------------ */
@@ -141,28 +116,26 @@ function globalEnterHandler(e) {
 }
 
 /* ------------------ Render Question with Fade-In Animation (Dynamic) ------------------ */
+/* ------------------ Render Question with Fade-In Animation (Dynamic) ------------------ */
 function renderQuestion(index) {
   quizDiv.innerHTML = "";
   const q = questions[index];
-  if (!q) return;
+  if (!q) return; // Safety check
   updateHud("progress", `Question ${index + 1}/${questions.length}`);
 
   const card = document.createElement("div");
   card.className = "card card-custom mx-auto fade-in";
 
-  // UPDATED: Support HTML in question (from backend formatting)
+  // NEW: Create question div separately to support HTML (<br> for line breaks/formatting)
   const questionDiv = document.createElement("div");
   questionDiv.className = "question-text";
-  questionDiv.innerHTML = q.question; // Renders <br> for options/line breaks
+  questionDiv.innerHTML = q.question; // Use innerHTML to render <br> as newlines (e.g., options)
 
   card.innerHTML = `
     <div class="card-body p-4">
        ${questionDiv.outerHTML}
        <input type="text" class="form-control answer-input" id="ansInput" autocomplete="off" autofocus placeholder="Enter answer in CAPS (e.g., B for option b)" style="resize: vertical; transition: border-color 0.3s;"> 
-       <div class="d-flex gap-2 mt-3"> <!-- UPDATED: Flex for side-by-side buttons -->
-         <button class="btn btn-outline-warning flex-fill" id="skipBtn">Skip</button> <!-- NEW: Skip button (orange outline) -->
-         <button class="btn btn-accent flex-fill" id="submitBtn">Submit</button>
-       </div>
+       <button class="btn btn-accent mt-3 w-100" id="submitBtn">Submit</button> 
      </div>
   `;
   quizDiv.appendChild(card);
@@ -170,12 +143,12 @@ function renderQuestion(index) {
   // Trigger fade-in animation
   setTimeout(() => card.classList.add("show"), 10);
 
-  startTimer(); // Resumes persistent timer (if applicable)
-  if (index === 0) { // UPDATED: Use index for first-question check
+  startTimer(); // start/reset timer for this question
+  if (current === 0) { // Only on first question
      updateHud("timer", `Time: ${formatTime(examTimerSeconds)} per question`);
    }
 
-  // UPDATED: Enhanced direct focus - select text, highlight input briefly (no click needed)
+  // NEW: Enhanced direct focus - select text, highlight input briefly (no click needed)
   const ansInput = document.getElementById("ansInput");
   if (ansInput) {
     setTimeout(() => { // Slight delay to ensure DOM ready
@@ -189,149 +162,42 @@ function renderQuestion(index) {
 
   const submit = () => {
     const ans = document.getElementById("ansInput").value.trim() || "-";
-    if (ans === "-") return; // UPDATED: Don't submit empty (use Skip instead)
     showConfirmModal(ans, () => submitAnswer(ans));
   };
-
-  // UPDATED: Skip button handler (saves "SKIPPED" and time, advances)
-  document.getElementById("skipBtn").addEventListener("click", () => {
-    const qCode = q.code;
-    userAnswers[qCode] = "SKIPPED"; // Placeholder (overwritable on revisit)
-    if (typeof questionTimers !== 'undefined') { // Save remaining time if persistent timers enabled
-      questionTimers[qCode] = remaining;
-    }
-    goToNextUnanswered(); // Advance to next unanswered
-    renderQuestionList(); // Update list with Skip status/time
-  }, {once: true});
 
   document.getElementById("submitBtn").addEventListener("click", submit, {once: true});
   document.getElementById("ansInput").addEventListener("keydown", e => {
     if (e.key === "Enter") {
       e.preventDefault();
-      if (confirmOpen) return; // UPDATED: Ignore if confirm modal open
+      if (confirmOpen) return; // ignore Enter if confirm is open
       submit();
     }
   }, {once: true});
-
-  // NEW: Render the navigation list after question (shows Skip times/badges)
-  renderQuestionList();
 }
-
-
-/* ------------------ Render Question Navigation List (Dynamic Sidebar) ------------------ */
-function renderQuestionList() {
-  const existingList = document.getElementById('questionList');
-  if (existingList) existingList.remove();
-
-  const listContainer = document.createElement('div');
-  listContainer.id = 'questionList';
-  listContainer.className = 'mt-4';
-  listContainer.innerHTML = `
-    <h6 class="mb-2 text-muted">Question Navigation</h6>
-    <div class="list-group list-group-horizontal-sm" id="navList" style="max-height: 200px; overflow-y: auto;">
-      ${questions.map((q, index) => {
-        const qCode = q.code;
-        const status = userAnswers[qCode];
-        let btnClass = 'btn btn-sm btn-outline-secondary me-1 mb-1';
-        let badgeText = '';
-        
-        // UPDATED: Time display logic
-        let timeText = '';
-        const savedTime = questionTimers[qCode] || (q.timerSeconds || examTimerSeconds);
-        if (status === undefined || status.toLowerCase() === 'skipped') { // Unanswered or skipped
-          timeText = ` (${formatTime(savedTime)})`;
-        }
-        
-        if (status && status.toUpperCase() === 'SKIPPED') {
-          btnClass = 'btn btn-sm btn-warning me-1 mb-1'; // Orange for skipped
-          badgeText = `(Skipped${timeText})`; // Show time for skipped
-        } else if (status) {
-          const isCorrect = status.toLowerCase() === answersMap[qCode].toLowerCase();
-          btnClass = isCorrect ? 'btn btn-sm btn-success me-1 mb-1' : 'btn btn-sm btn-danger me-1 mb-1';
-          badgeText = isCorrect ? ' (Correct)' : ' (Wrong)';
-        } else {
-          badgeText = timeText; // Just time for unanswered
-        }
-        
-        return `<button class="${btnClass}" onclick="navigateToQuestion(${index})">${index + 1}${badgeText}</button>`;
-      }).join('')}
-      <button id="nextBtn" class="btn btn-sm btn-accent ms-2" onclick="goToNextUnanswered()" style="display: none;">Next</button>
-      <button id="finishBtn" class="btn btn-sm btn-primary ms-2" onclick="finishExam()" style="display: none;">Finish Exam</button>
-    </div>
-  `;
-  
-  const currentCard = quizDiv.querySelector('.card');
-  if (currentCard) {
-    currentCard.parentNode.insertBefore(listContainer, currentCard.nextSibling);
-  } else {
-    quizDiv.appendChild(listContainer);
-  }
-  
-  updateNavigationButtons();
-}
-
-/* ------------------ Navigation Helpers ------------------ */
-function navigateToQuestion(index) {
-  if (index < 0 || index >= questions.length || !isExamActive) return;
-  current = index;
-  renderQuestion(current);
-  renderQuestionList(); // Refresh list highlights
-  // Restart timer for new question
-  clearInterval(timer);
-  startTimer();
-}
-
-function goToNextUnanswered() {
-  for (let i = current + 1; i < questions.length; i++) {
-    const qCode = questions[i].code;
-    if (!userAnswers[qCode]) {
-      navigateToQuestion(i);
-      return;
-    }
-  }
-  // If no unanswered, show Finish
-  updateNavigationButtons();
-}
-
-function updateNavigationButtons() {
-  nextButton = document.getElementById('nextBtn');
-  finishButton = document.getElementById('finishBtn');
-  
-  if (nextButton) {
-    const hasUnanswered = questions.some((q, i) => i > current && !userAnswers[q.code]);
-    nextButton.style.display = hasUnanswered ? 'inline-block' : 'none';
-  }
-  
-  if (finishButton) {
-    // Show Finish if all questions are answered or passed
-    const allHandled = questions.every(q => userAnswers[q.code]);
-    finishButton.style.display = allHandled ? 'inline-block' : 'none';
-  }
-}
-
 
 /* ------------------ Submit Answer (Instant from Batch Map) ------------------ */
 function submitAnswer(userAnswer) {
-  // UPDATED: Save time before stopping timer
-  const q = questions[current];
-  if (q) {
-    questionTimers[q.code] = remaining; // Pause/save time
-  }
-  clearInterval(timer);
+  clearInterval(timer); // stop timer on submit
 
+  const q = questions[current];
   if (!q) return;
 
-  const correctAnswer = answersMap[q.code] || "";
-  userAnswers[q.code] = userAnswer;
+  const correctAnswer = answersMap[q.code] || ""; // Instant lookup from batch
 
-  // UPDATED: Score only if not skipped (ignore "SKIPPED")
-  if (userAnswer.toLowerCase() !== "skipped" && userAnswer.toLowerCase() === correctAnswer.toLowerCase()) {
+  userAnswers[q.code] = userAnswer; // Changed: Use q.code as key (object, not array)
+
+  if (userAnswer.toLowerCase() === correctAnswer.toLowerCase()) {
     score++;
   }
 
-  // No auto-advance; refresh list for navigation
-  renderQuestionList();
+  current++;
+  if (current < questions.length) {
+    renderQuestion(current);
+  } else {
+    finishExam();
+  }
 }
+
 /* ------------------ Batch Fetch Questions and Answers from Sheet ------------------ */
 async function fetchAllQuestionsAndAnswers() {
   try {
@@ -431,24 +297,14 @@ function showConfirmModal(answer, onConfirm) {
 
 /* ------------------ Finish Exam & Record Grade (with Fade-In) ------------------ */
 function finishExam() {
-  // UPDATED: Check all handled (answered or skipped)
-  const allHandled = questions.every(q => userAnswers[q.code] !== undefined);
-  if (!allHandled) {
-    alert("Please answer or skip all questions before finishing.");
-    return;
-  }
   clearInterval(timer);
-  questionTimers = {}; // NEW: Clear persistent timers on finish
   isExamActive = false;
-  if (typeof globalEnterHandler !== 'undefined') document.removeEventListener("keydown", globalEnterHandler);
-  
+  document.removeEventListener("keydown", globalEnterHandler);
   quizDiv.innerHTML = "";
   updateHud("progress", "Exam Completed");
   resultEl.textContent = "Exam Finished";
-  // UPDATED: Score excludes skipped (only answered questions)
-  const answeredQuestions = questions.filter(q => userAnswers[q.code] && userAnswers[q.code].toLowerCase() !== 'skipped').length;
-  const finalScore = answeredQuestions > 0 ? `${score}/${answeredQuestions}` : '0/0';
-  
+
+  const finalScore = `${score}/${questions.length}`;
   const resultsCard = document.createElement("div");
   resultsCard.className = "card card-custom mx-auto fade-in";
   resultsCard.style.maxWidth = "600px";
@@ -462,6 +318,8 @@ function finishExam() {
     </div>
   `;
   quizDiv.appendChild(resultsCard);
+
+  // Trigger fade-in
   setTimeout(() => resultsCard.classList.add("show"), 10);
 
        // FIXED: Record grade via POST (handles long JSON); add UI confirmation above results
@@ -531,13 +389,14 @@ function finishExam() {
 
 /* ------------------ Reset Exam (with Fade-Out) ------------------ */
 function resetExam() {
+  // Fade out quiz area
   quizDiv.style.opacity = "0";
   quizDiv.style.transition = "opacity 0.5s ease";
   setTimeout(() => {
     quizDiv.innerHTML = "";
     quizDiv.style.opacity = "1";
-    if (typeof globalEnterHandler !== 'undefined') document.removeEventListener("keydown", globalEnterHandler);
-    questionTimers = {}; // NEW: Clear on reset
+    // NEW: Ensure global Enter listener is removed
+    document.removeEventListener("keydown", globalEnterHandler);
     resultEl.textContent = "Enter your details to begin the exam.";
     startBtn.style.display = "block";
     startCard.style.display = "block";
@@ -545,18 +404,17 @@ function resetExam() {
     updateHud("timer", "Time: 00:30");
     score = 0;
     current = 0;
-    userAnswers = {};
+    userAnswers = {}; // Reset to empty object
     remaining = 30;
     tabWarnings = 0;
     violationLock = false;
     isExamActive = false;
     questions = [];
-    answersMap = {};
+    answersMap = {}; // Clear batch data
     examTimerSeconds = 30; 
-    document.body.style.background = "";
+    document.body.style.background = ""; // Reset if needed
   }, 500);
 }
-
 
 /* ------------------ Violation Handling ------------------ */
 function handleViolation() {
@@ -692,10 +550,8 @@ startBtn.addEventListener("click", async () => {
       current = 0;
       score = 0;
       userAnswers = {};
-      questionTimers = {};
       document.addEventListener("keydown", globalEnterHandler);
       renderQuestion(0);
-      renderQuestionList();
     } else {
       // Error already handled in fetchAllQuestionsAndAnswers (modal shown)
     }
