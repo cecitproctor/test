@@ -394,81 +394,97 @@
      padding-bottom: 0.625rem;
    }
    
- /* Loading Spinner Enhancements */
- #loadingSpinner {
-     position: fixed;
-     top: 50%;
-     left: 50%;
-     transform: translate(-50%, -50%);
-     z-index: 1050;
-     background: rgba(255, 255, 255, 0.9);
-     padding: 20px;
-     border-radius: 10px;
-     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
- }
- 
- #loadingSpinner.show {
-     display: block !important; /* Override d-none if needed */
- }
- 
- /* Error Modal Tweaks */
- #errorModal .modal-body {
-     max-height: 300px;
-     overflow-y: auto;
- }
+/* Loading Spinner Enhancements (Fixed: Dark theme glass bg, no white) */
+#loadingSpinner {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1050;
+  background: var(--glass-bg); /* Fixed: Semi-transparent dark glass instead of white */
+  color: var(--text-primary); /* Ensure text is light */
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--glass-border); /* Add glass border for theme */
+  backdrop-filter: var(--glass-blur); /* Add blur for consistency */
+  -webkit-backdrop-filter: var(--glass-blur); /* Safari/iOS support */
+  width: 90%; /* Responsive: Prevent overflow on small screens */
+  max-width: 300px; /* Cap width for readability */
+}
 
-   .loader {
-     width: 0;
-     height: 4.8px;
-     display: inline-block;
-     position: relative;
-     background: #007bff; /* Theme blue, not white */
-     box-shadow: 0 0 10px rgba(0, 123, 255, 0.5); /* Matching glow */
-     box-sizing: border-box;
-     animation: animFw 8s linear infinite; /* Matches fetch ~5-8s */
-   }
-   .loader::after,
-   .loader::before {
-     content: '';
-     width: 10px;
-     height: 1px;
-     background: #007bff; /* Theme color */
-     position: absolute;
-     top: 9px;
-     right: -2px;
-     opacity: 0;
-     transform: rotate(-45deg) translateX(0px);
-     box-sizing: border-box;
-     animation: coli1 0.3s linear infinite;
-   }
-   .loader::before {
-     top: -4px;
-     transform: rotate(45deg);
-     animation: coli2 0.3s linear infinite;
-   }
+#loadingSpinner.show {
+  display: block !important; /* Override d-none if needed (JS uses classList) */
+}
 
-   @keyframes animFw {
-     0% { width: 0; }
-     100% { width: 100%; }
-   }
+#loadingSpinner p {
+  margin: 0; /* Tighten spacing */
+  font-weight: 400;
+}
 
-   @keyframes coli1 {
-     0% { transform: rotate(-45deg) translateX(0px); opacity: 0.7; }
-     100% { transform: rotate(-45deg) translateX(-45px); opacity: 0; }
-   }
+/* Error Modal Tweaks (Enhanced for scroll and theme) */
+#errorModal .modal-body {
+  max-height: 300px;
+  overflow-y: auto;
+}
 
-   @keyframes coli2 {
-     0% { transform: rotate(45deg) translateX(0px); opacity: 1; }
-     100% { transform: rotate(45deg) translateX(-45px); opacity: 0.7; }
-   }
-   
- 
- #errorText {
-     white-space: pre-line; /* Preserve line breaks in messages */
- }
+#errorText {
+  white-space: pre-line; /* Preserve line breaks in messages from JS */
+  font-size: 0.95rem; /* Slightly smaller for long errors */
+}
 
-
+/* Focus Highlight (Fixed: Green theme instead of blue) */
 .focus-highlight {
-  border-color: #007bff !important;
-  box-shadow: 0 0 5px rgba(0, 123, 255, 0.5) !important;
+  border-color: var(--accent) !important; /* Emerald green to match theme */
+  box-shadow: 0 0 5px rgba(16, 185, 129, 0.5) !important; /* Green glow, not blue */
+}
+
+/* Modal Close Button (New: White for visibility on dark glass theme) */
+.btn-close-white {
+  filter: invert(1); /* Makes default black close icon white */
+  opacity: 0.8;
+  transition: opacity 0.2s ease;
+}
+
+.btn-close-white:hover {
+  opacity: 1;
+}
+
+/* Optional: Reduced Motion Support (New: Accessibility enhancement) */
+@media (prefers-reduced-motion: reduce) {
+  .fade-in,
+  .fade-in.show,
+  .pill-custom.updated,
+  * {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
+}
+
+/* Responsive Nav List Enhancement (New: For JS-rendered question navigation) */
+@media (max-width: 768px) {
+  .list-group-horizontal-sm {
+    flex-direction: column !important; /* Stack buttons vertically on mobile to prevent overflow */
+    gap: 0.25rem;
+  }
+  
+  .list-group-horizontal-sm .btn-sm {
+    width: 100%; /* Full-width buttons on small screens */
+    border-radius: 8px; /* Softer corners for touch */
+  }
+}
+
+/* Backdrop Filter Fallback (New: For older browsers without blur support) */
+@supports not (backdrop-filter: blur(10px)) {
+  .glass-bg-fallback,
+  #loadingSpinner,
+  .card-custom,
+  .pill-custom,
+  .form-control,
+  .answer-input,
+  .modal-content-custom {
+    background: rgba(0, 0, 0, 0.3); /* Darker fallback without blur */
+    backdrop-filter: none;
+  }
 }
