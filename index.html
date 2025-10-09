@@ -15,7 +15,7 @@
 <body>
   <!-- Header -->
   <header class="header-bg">
-    <h1>Online Exam Proctor</h1>
+    <h1>Information Online Exam Proctor</h1>
     <h2>ALL ANSWERS MUST BE IN CAPSLOCK OR ELSE INCORRECT</h2>
     <p>Please read the questions and answer carefully.</p>
   </header>
@@ -25,7 +25,7 @@
     <!-- HUD -->
     <div class="hud-pills">
       <span class="pill-custom" id="progress">Question 0/0</span>
-      <span class="pill-custom" id="timer">Time: 00:00</span>
+      <span class="pill-custom" id="timer">Time: 00:30</span>
     </div>
 
 
@@ -70,9 +70,11 @@
             <button id="submitBtn" class="btn btn-success d-none">Submit</button>
         </div>
         <!-- Loading Spinner (Bootstrap Circling Animation) -->
-        <div id="loadingSpinner" class="d-none text-center mt-4">
-          <span class="loader"></span> <!-- Custom loader -->
-          <p class="mt-2" id="loadingCode">Loading test <span id="codePlaceholder"></span>...</p>
+        <div id="loadingSpinner" class="d-none text-center p-4">
+            <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+                <span class="visually-hidden">Loading quiz...</span>
+            </div>
+            <p class="mt-2">Loading questions for <span id="loadingCode"></span>... Please wait.</p>
         </div>
     </div>
   </main>
